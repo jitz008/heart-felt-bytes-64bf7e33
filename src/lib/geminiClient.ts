@@ -23,7 +23,8 @@ const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
 export const hasClientGeminiKey = () => Boolean(getApiKey());
 
 export async function callGeminiJSON(prompt: string, systemInstruction?: string): Promise<any> {
-  if (!API_KEY) throw new Error('VITE_GEMINI_API_KEY not configured');
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Gemini API key not configured');
 
   const body: any = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -33,7 +34,7 @@ export async function callGeminiJSON(prompt: string, systemInstruction?: string)
     body.systemInstruction = { parts: [{ text: systemInstruction }] };
   }
 
-  const res = await fetch(`${ENDPOINT}?key=${API_KEY}`, {
+  const res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
