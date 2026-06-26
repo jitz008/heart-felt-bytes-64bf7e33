@@ -436,6 +436,7 @@ function PriorityColumn({
   dotColor,
   tasks,
   toggleComplete,
+  toggleRoadmapStep,
   onAdd,
 }: {
   title: string;
@@ -445,10 +446,12 @@ function PriorityColumn({
   dotColor: string;
   tasks: Task[];
   toggleComplete: (id: string) => void;
+  toggleRoadmapStep?: (taskId: string, stepIndex: number) => void;
   onAdd: (text: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
   const [val, setVal] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   return (
     <div className="glass p-4 flex flex-col gap-3 min-h-[200px]">
@@ -458,25 +461,92 @@ function PriorityColumn({
       </div>
 
       <div className="flex flex-col gap-2">
-        {tasks.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => toggleComplete(t.id)}
-            className="group glass-input flex items-center gap-2.5 px-3 py-2.5 text-left hover:-translate-y-px transition-all"
-            style={{ borderRadius: 8 }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = hoverBorder;
-              (e.currentTarget as HTMLElement).style.background = hoverBg;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = '';
-              (e.currentTarget as HTMLElement).style.background = '';
-            }}
-          >
-            <span className={`dot ${dotColor}`} style={{ width: 5, height: 5 }} />
-            <span className="text-[12px] text-white/65 flex-1 truncate">{t.title}</span>
-          </button>
-        ))}
+        {tasks.map((t) => {
+          const hasRoadmap = t.complexity === 'complex' && t.roadmapSteps && t.roadmapSteps.length > 0;
+          const isOpen = expanded[t.id] ?? true;
+          return (
+            <div
+              key={t.id}
+              className="glass-input flex flex-col"
+              style={{ borderRadius: 8 }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = hoverBorder;
+                (e.currentTarget as HTMLElement).style.background = hoverBg;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = '';
+                (e.currentTarget as HTMLElement).style.background = '';
+              }}
+            >
+              <div className="flex items-center gap-2.5 px-3 py-2.5">
+                <button
+                  onClick={() => toggleComplete(t.id)}
+                  className="shrink-0 w-[14px] h-[14px] rounded-[3px] border-[1.5px] border-white/25 hover:border-white/50 transition-colors"
+                  aria-label="Complete"
+                />
+                <span className={`dot ${dotColor}`} style={{ width: 5, height: 5 }} />
+                <span className="text-[12px] text-white/75 flex-1 truncate">{t.title}</span>
+                {hasRoadmap && (
+                  <button
+                    onClick={() => setExpanded((s) => ({ ...s, [t.id]: !isOpen }))}
+                    className="text-[10px] text-white/40 hover:text-white/70"
+                  >
+                    {isOpen ? '−' : `+${t.roadmapSteps!.length}`}
+                  </button>
+                )}
+              </div>
+
+              {(t.person || t.location) && (
+                <div className="flex items-center gap-2 px-3 pb-1.5 -mt-1 text-[10px] text-white/35">
+                  {t.person && (
+                    <span className="inline-flex items-center gap-1">
+                      <UserIcon className="w-2.5 h-2.5" /> {t.person}
+                    </span>
+                  )}
+                  {t.location && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-2.5 h-2.5" /> {t.location}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {hasRoadmap && isOpen && (
+                <div className="flex flex-col gap-1 px-3 pb-2.5 pt-1 border-t border-white/[0.04] mt-1">
+                  {t.roadmapSteps!.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => toggleRoadmapStep?.(t.id, i)}
+                      className="flex items-start gap-2 text-left group/step"
+                    >
+                      <span
+                        className="shrink-0 mt-[3px] w-[11px] h-[11px] rounded-[2px] flex items-center justify-center transition-all"
+                        style={{
+                          background: s.done ? '#2563eb' : 'transparent',
+                          border: s.done ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        {s.done && <Check className="w-[7px] h-[7px] text-white stroke-[3]" />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span
+                          className="text-[11px] block leading-tight"
+                          style={{
+                            color: s.done ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.65)',
+                            textDecoration: s.done ? 'line-through' : 'none',
+                          }}
+                        >
+                          {s.step}
+                        </span>
+                        <span className="text-[9px] text-white/30">{s.timing}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {adding ? (
           <form
