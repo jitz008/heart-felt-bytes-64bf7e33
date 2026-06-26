@@ -154,3 +154,15 @@ body {
   50%      { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
 }
 .rec-dot { animation: rec-pulse 1.2s ease-in-out infinite; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 0.9s ease-in-out infinite;
+  color: rgba(79,142,247,0.8);
+  font-weight: 300;
+}
+
+:root { --background: #060d1a; }
