@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Task, ChecklistItem } from '../types';
-import { auth, db, initializeFirebaseConnection, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from '../lib/firebase';
+import { auth, db, initializeFirebaseConnection, isIframed, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc as firebaseSetDoc, deleteDoc } from 'firebase/firestore';
 
