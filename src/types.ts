@@ -5,6 +5,12 @@ export interface ChecklistItem {
   is_done: boolean;
 }
 
+export interface RoadmapStep {
+  step: string;
+  timing: string;
+  done?: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -26,6 +32,32 @@ export interface Task {
   calendarEventId?: string;
   googleTaskId?: string;
   googleTaskListId?: string;
+  // ───── Tasks 2.0 AI intake additions ─────
+  taskType?: 'meeting' | 'event' | 'payment' | 'errand' | 'social' | 'other';
+  complexity?: 'simple' | 'medium' | 'complex';
+  person?: string;
+  location?: string;
+  roadmapSteps?: RoadmapStep[];
+  priorityReason?: string;
+}
+
+export interface ClarifyingQuestion {
+  question: string;
+  chips: string[];
+  key?: string;
+}
+
+export interface IntakeResult {
+  title: string;
+  taskType: Task['taskType'];
+  complexity: Task['complexity'];
+  extractedEntities: { time?: string; person?: string; location?: string };
+  missingCritical: string[];
+  clarifyingQuestions: ClarifyingQuestion[];
+  priority: 'high' | 'medium' | 'low';
+  priorityReason: string;
+  roadmapSteps: RoadmapStep[];
+  userPace: 'hurried' | 'casual';
 }
 
 export interface DayPlanBlock {
