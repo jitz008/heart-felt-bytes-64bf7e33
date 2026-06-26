@@ -151,20 +151,12 @@ export default function HomeView({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="flex flex-col gap-6"
         >
-          {/* Hero */}
-          <div
-            className="relative w-full overflow-hidden py-10 px-6 text-center"
-            style={{
-              maskImage:
-                'radial-gradient(ellipse 65% 75% at center, black 35%, transparent 100%)',
-              WebkitMaskImage:
-                'radial-gradient(ellipse 65% 75% at center, black 35%, transparent 100%)',
-            }}
-          >
-            <GradientDots opacity={0.45} />
-            <div className="relative z-10 flex flex-col items-center gap-2">
+          <div className="relative w-full overflow-hidden rounded-2xl pt-10 pb-6 px-6">
+            <GradientDots opacity={0.4} />
+
+            {/* Hero */}
+            <div className="relative z-10 flex flex-col items-center gap-2 text-center mb-6">
               <h1
                 className="text-[44px] md:text-[56px] leading-none font-medium tracking-tight"
                 style={{
@@ -180,78 +172,79 @@ export default function HomeView({
                 Don't forget yours!
               </p>
             </div>
-          </div>
 
-          {/* AI Input */}
-          <form
-            onSubmit={handleSubmit}
-            className={`glass-elevated ${aiLoading ? 'ai-thinking' : ''}`}
-          >
-            <div className="flex items-center gap-3 px-4 py-3.5">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, #4f8ef7 0%, #6366f1 100%)' }}
-              >
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={recording ? interim : input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  placeholder={typed || 'Add a task or talk to Pulse AI...'}
-                  className="w-full bg-transparent border-0 outline-none text-[13px] text-white/90 placeholder:text-white/30"
-                />
-                {showInputCursor && (
-                  <span
-                    aria-hidden
-                    className="cursor-blink pointer-events-none absolute top-1/2 -translate-y-1/2 text-[13px]"
-                    style={{ left: `${(typed?.length || 0) * 6.6}px` }}
-                  >
-                    |
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={toggleRecording}
-                className="relative w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all"
-                style={{
-                  background: recording ? 'rgba(239,68,68,0.15)' : 'rgba(79,142,247,0.15)',
-                  border: `1px solid ${recording ? 'rgba(239,68,68,0.5)' : 'rgba(79,142,247,0.25)'}`,
-                  color: recording ? '#ef4444' : '#4f8ef7',
-                }}
-                title="Voice input"
-              >
-                <Mic className="w-4 h-4" />
-                {recording && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-red-500 rec-dot" />
-                )}
-              </button>
-            </div>
-
-            <div className="border-t border-white/5 px-4 py-2 flex items-center gap-2 flex-wrap">
-              {QUICK_CMDS.map((cmd) => (
-                <button
-                  key={cmd}
-                  type="button"
-                  onClick={() => setInput(cmd.replace('/ ', '') + ' ')}
-                  className="glass-input px-2.5 py-1 text-[11px] text-white/55 hover:text-white/85 hover:border-[rgba(79,142,247,0.3)] rounded-lg"
+            {/* AI Input */}
+            <form
+              onSubmit={handleSubmit}
+              className={`relative z-10 glass-elevated ${aiLoading ? 'ai-thinking' : ''}`}
+            >
+              <div className="flex items-center gap-3 px-4 py-3.5">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #4f8ef7 0%, #6366f1 100%)' }}
                 >
-                  {cmd}
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={recording ? interim : input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    placeholder={typed || 'Add a task or talk to Pulse AI...'}
+                    className="w-full bg-transparent border-0 outline-none text-[13px] text-white/90 placeholder:text-white/30"
+                  />
+                  {showInputCursor && (
+                    <span
+                      aria-hidden
+                      className="cursor-blink pointer-events-none absolute top-1/2 -translate-y-1/2 text-[13px]"
+                      style={{ left: `${(typed?.length || 0) * 6.6}px` }}
+                    >
+                      |
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  className="relative w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all"
+                  style={{
+                    background: recording ? 'rgba(239,68,68,0.15)' : 'rgba(79,142,247,0.15)',
+                    border: `1px solid ${recording ? 'rgba(239,68,68,0.5)' : 'rgba(79,142,247,0.25)'}`,
+                    color: recording ? '#ef4444' : '#4f8ef7',
+                  }}
+                  title="Voice input"
+                >
+                  <Mic className="w-4 h-4" />
+                  {recording && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-red-500 rec-dot" />
+                  )}
                 </button>
-              ))}
-              {recording && (
-                <span className="ml-auto text-[11px] text-white/40">Listening…</span>
-              )}
-              {aiLoading && aiStatusMessage && !recording && (
-                <span className="ml-auto text-[11px] text-[#4f8ef7]">{aiStatusMessage}</span>
-              )}
-            </div>
-          </form>
+              </div>
+
+              <div className="border-t border-white/5 px-4 py-2 flex items-center gap-2 flex-wrap">
+                {QUICK_CMDS.map((cmd) => (
+                  <button
+                    key={cmd}
+                    type="button"
+                    onClick={() => setInput(cmd.replace('/ ', '') + ' ')}
+                    className="glass-input px-2.5 py-1 text-[11px] text-white/55 hover:text-white/85 hover:border-[rgba(79,142,247,0.3)] rounded-lg"
+                  >
+                    {cmd}
+                  </button>
+                ))}
+                {recording && (
+                  <span className="ml-auto text-[11px] text-white/40">Listening…</span>
+                )}
+                {aiLoading && aiStatusMessage && !recording && (
+                  <span className="ml-auto text-[11px] text-[#4f8ef7]">{aiStatusMessage}</span>
+                )}
+              </div>
+            </form>
+          </div>
         </motion.section>
+
 
         {/* ───────── OVERALL EMPTY ───────── */}
         {!hasAnyTasks && (
