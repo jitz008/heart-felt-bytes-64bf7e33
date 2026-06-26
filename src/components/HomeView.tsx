@@ -321,6 +321,7 @@ export default function HomeView({
                   dotColor="dot-red"
                   tasks={high}
                   toggleComplete={toggleComplete}
+                  toggleRoadmapStep={toggleRoadmapStep}
                   onAdd={(t) => submit(`${t} (critical)`)}
                 />
               )}
@@ -333,6 +334,7 @@ export default function HomeView({
                   dotColor="dot-amber"
                   tasks={med}
                   toggleComplete={toggleComplete}
+                  toggleRoadmapStep={toggleRoadmapStep}
                   onAdd={(t) => submit(`${t} (high)`)}
                 />
               )}
@@ -345,6 +347,7 @@ export default function HomeView({
                   dotColor="dot-green"
                   tasks={low}
                   toggleComplete={toggleComplete}
+                  toggleRoadmapStep={toggleRoadmapStep}
                   onAdd={(t) => submit(`${t} (later)`)}
                 />
               )}
