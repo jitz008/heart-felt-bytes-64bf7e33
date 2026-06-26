@@ -154,8 +154,16 @@ export default function HomeView({
           className="flex flex-col gap-6"
         >
           {/* Hero */}
-          <div className="relative w-full overflow-hidden rounded-2xl py-10 px-6 text-center">
-            <GradientDots opacity={0.4} />
+          <div
+            className="relative w-full overflow-hidden py-10 px-6 text-center"
+            style={{
+              maskImage:
+                'radial-gradient(ellipse 65% 75% at center, black 35%, transparent 100%)',
+              WebkitMaskImage:
+                'radial-gradient(ellipse 65% 75% at center, black 35%, transparent 100%)',
+            }}
+          >
+            <GradientDots opacity={0.45} />
             <div className="relative z-10 flex flex-col items-center gap-2">
               <h1
                 className="text-[44px] md:text-[56px] leading-none font-medium tracking-tight"
