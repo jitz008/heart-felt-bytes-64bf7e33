@@ -1216,6 +1216,8 @@ export function useTasks() {
     toggleChecklistItem,
     deleteTask,
     addTaskNatural,
+    addTaskStructured,
+    toggleRoadmapStep,
     addManualTask,
     breakTaskDown,
     rescueTask,
