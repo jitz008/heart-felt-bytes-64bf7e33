@@ -58,6 +58,7 @@ export default function HomeView({
   const [interim, setInterim] = useState('');
   const recognitionRef = useRef<any>(null);
   const silenceTimer = useRef<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const typed = useTypewriterPlaceholder();
   const { session, start, answer, finish, reset } = useAIIntake();
 
@@ -91,6 +92,15 @@ export default function HomeView({
     await addTaskStructured(session.intake, session.answers);
     finish();
     setTimeout(reset, 600);
+  };
+
+  const handleAddDetails = () => {
+    const base = session.rawInput || session.intake?.title || '';
+    const answeredDetails = Object.values(session.answers).filter(Boolean).join(' ');
+    const draft = [base, answeredDetails].filter(Boolean).join(' ').trim();
+    setInput(draft ? `${draft} ` : '');
+    setInterim('');
+    window.requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -219,6 +229,7 @@ export default function HomeView({
               </div>
               <div className="relative flex-1">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={recording ? interim : input}
                   onChange={(e) => setInput(e.target.value)}
@@ -279,11 +290,7 @@ export default function HomeView({
             session={session}
             onAnswer={answer}
             onConfirm={handleConfirmIntake}
-            onAddDetails={() => {
-              const draft = session.intake?.title || '';
-              reset();
-              setInput(draft);
-            }}
+            onAddDetails={handleAddDetails}
             onCancel={reset}
           />
         </motion.section>
