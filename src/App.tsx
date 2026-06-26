@@ -33,6 +33,8 @@ export default function App() {
     toggleChecklistItem,
     deleteTask,
     addTaskNatural,
+    addTaskStructured,
+    toggleRoadmapStep,
     addManualTask,
     breakTaskDown,
     rescueTask,
@@ -208,7 +210,9 @@ export default function App() {
             <HomeView
               tasks={tasks}
               addTaskNatural={addTaskNatural}
+              addTaskStructured={addTaskStructured}
               toggleComplete={toggleComplete}
+              toggleRoadmapStep={toggleRoadmapStep}
               aiLoading={aiLoading}
               aiStatusMessage={aiStatusMessage}
             />

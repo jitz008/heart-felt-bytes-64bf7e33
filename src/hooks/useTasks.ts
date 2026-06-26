@@ -942,6 +942,75 @@ export function useTasks() {
     }
   };
 
+  // Tasks 2.0 — create task from structured AI intake + chip answers
+  const addTaskStructured = async (
+    intake: import('../types').IntakeResult,
+    answers: Record<string, string>
+  ): Promise<void> => {
+    const urgency: Task['urgency'] =
+      intake.priority === 'high' ? 'critical' : intake.priority === 'medium' ? 'high' : 'later';
+
+    // Parse "when" answer into a rough ISO deadline
+    let deadline_iso: string | undefined;
+    let deadline_human: string | undefined;
+    const when = answers.when || intake.extractedEntities?.time;
+    if (when) {
+      const d = new Date();
+      const w = when.toLowerCase();
+      if (w.includes('tomorrow')) d.setDate(d.getDate() + 1);
+      else if (w.includes('week')) d.setDate(d.getDate() + 3);
+      d.setHours(17, 0, 0, 0);
+      deadline_iso = d.toISOString();
+      deadline_human = when;
+    }
+
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: intake.title,
+      deadline_iso,
+      deadline_human,
+      estimated_minutes: intake.complexity === 'complex' ? 60 : intake.complexity === 'medium' ? 30 : 15,
+      difficulty: intake.complexity === 'complex' ? 'hard' : intake.complexity === 'medium' ? 'medium' : 'easy',
+      urgency,
+      category: intake.taskType === 'payment' ? 'finance' : intake.taskType === 'meeting' ? 'work' : 'personal',
+      priority_score: urgency === 'critical' ? 9 : urgency === 'high' ? 6 : 3,
+      calendar_conflict: null,
+      reasoning: intake.priorityReason,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      checklist: [],
+      starred: false,
+      list: activeList,
+      taskType: intake.taskType,
+      complexity: intake.complexity,
+      person: answers.who || intake.extractedEntities?.person,
+      location: intake.extractedEntities?.location,
+      roadmapSteps: (intake.roadmapSteps || []).map((s) => ({ ...s, done: false })),
+      priorityReason: intake.priorityReason,
+    };
+
+    if (isFirebase && userId) {
+      await setDoc(doc(db, 'users', userId, 'tasks', newTask.id), newTask);
+    } else {
+      saveTasksLocal([newTask, ...tasks]);
+    }
+  };
+
+  // Toggle a roadmap step done state
+  const toggleRoadmapStep = async (taskId: string, stepIndex: number) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || !task.roadmapSteps) return;
+    const updated = task.roadmapSteps.map((s, i) =>
+      i === stepIndex ? { ...s, done: !s.done } : s
+    );
+    const next: Task = { ...task, roadmapSteps: updated };
+    if (isFirebase && userId) {
+      await setDoc(doc(db, 'users', userId, 'tasks', taskId), next);
+    } else {
+      saveTasksLocal(tasks.map((t) => (t.id === taskId ? next : t)));
+    }
+  };
+
   // Break it Down feature
   const breakTaskDown = async (id: string) => {
     const targetTask = tasks.find(t => t.id === id);
@@ -1147,6 +1216,8 @@ export function useTasks() {
     toggleChecklistItem,
     deleteTask,
     addTaskNatural,
+    addTaskStructured,
+    toggleRoadmapStep,
     addManualTask,
     breakTaskDown,
     rescueTask,
