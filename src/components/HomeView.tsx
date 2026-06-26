@@ -274,6 +274,18 @@ export default function HomeView({
               )}
             </div>
           </form>
+
+          <ChipClarifier
+            session={session}
+            onAnswer={answer}
+            onConfirm={handleConfirmIntake}
+            onAddDetails={() => {
+              const draft = session.intake?.title || '';
+              reset();
+              setInput(draft);
+            }}
+            onCancel={reset}
+          />
         </motion.section>
 
         {/* ───────── OVERALL EMPTY ───────── */}
