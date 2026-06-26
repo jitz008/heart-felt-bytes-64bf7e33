@@ -601,7 +601,18 @@ export function useTasks() {
     async function init() {
       try {
         await initializeFirebaseConnection();
+        // Capture Google OAuth credential after redirect sign-in (iframe flow)
+        try {
+          const redirectResult = await getRedirectResult(auth);
+          if (redirectResult) {
+            const credential = GoogleAuthProvider.credentialFromResult(redirectResult);
+            if (credential?.accessToken) setAccessToken(credential.accessToken);
+          }
+        } catch (e) {
+          console.warn("getRedirectResult failed:", e);
+        }
         if (authUnsubscribed) return;
+
 
         unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
           if (firebaseUser) {
