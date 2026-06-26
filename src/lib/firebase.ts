@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signOut 
 } from 'firebase/auth';
@@ -26,11 +28,18 @@ export const auth = getAuth(app);
 // Initialize Firestore with custom Database ID
 export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || 'ai-studio-7bd3396e-d065-46a9-9d0c-9b1847e79c41');
 
+// Detect environments where popup auth is unreliable (iframes like Lovable preview)
+export const isIframed = (() => {
+  try { return window.self !== window.top; } catch { return true; }
+})();
+
 // Export auth providers and helpers
 export { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signOut 
 };
