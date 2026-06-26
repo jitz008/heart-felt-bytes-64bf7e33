@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Task, ChecklistItem } from '../types';
-import { auth, db, initializeFirebaseConnection, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from '../lib/firebase';
+import { auth, db, initializeFirebaseConnection, isIframed, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc as firebaseSetDoc, deleteDoc } from 'firebase/firestore';
 
@@ -601,7 +601,18 @@ export function useTasks() {
     async function init() {
       try {
         await initializeFirebaseConnection();
+        // Capture Google OAuth credential after redirect sign-in (iframe flow)
+        try {
+          const redirectResult = await getRedirectResult(auth);
+          if (redirectResult) {
+            const credential = GoogleAuthProvider.credentialFromResult(redirectResult);
+            if (credential?.accessToken) setAccessToken(credential.accessToken);
+          }
+        } catch (e) {
+          console.warn("getRedirectResult failed:", e);
+        }
         if (authUnsubscribed) return;
+
 
         unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
           if (firebaseUser) {
@@ -1087,6 +1098,11 @@ export function useTasks() {
     provider.addScope('https://www.googleapis.com/auth/calendar');
     provider.addScope('https://www.googleapis.com/auth/calendar.events');
     provider.addScope('https://www.googleapis.com/auth/tasks');
+    if (isIframed) {
+      // Popups are blocked inside iframes (Lovable preview). Use redirect.
+      await signInWithRedirect(auth, provider);
+      return;
+    }
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (credential?.accessToken) {
