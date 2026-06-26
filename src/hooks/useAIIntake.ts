@@ -52,9 +52,8 @@ const fallbackIntake = (input: string): IntakeResult => {
       person: hasWho ? (input.match(/with\s+([A-Za-z]+)/)?.[1] || (/client/.test(lower) ? 'Client' : 'Team')) : '',
       location: '',
     },
-    missingCritical: [!hasWhen ? 'when' : '', complexity !== 'simple' && !hasWho ? 'who' : ''].filter(Boolean),
+    missingCritical: [complexity !== 'simple' && !hasWho ? 'who' : ''].filter(Boolean),
     clarifyingQuestions: [
-      ...(!hasWhen ? [{ key: 'when', question: 'When is this?', chips: ['Today', 'Tomorrow', 'This week', 'Pick a date'] }] : []),
       ...(complexity !== 'simple' && !hasWho ? [{ key: 'who', question: 'Who is involved?', chips: ['Client', 'Team', 'Friend', 'Just me'] }] : []),
     ],
     priority: highIntent ? 'high' : mediumIntent ? 'medium' : 'low',
@@ -70,6 +69,20 @@ const fallbackIntake = (input: string): IntakeResult => {
     userPace: /asap|now|quick|urgent/.test(lower) ? 'hurried' : 'casual',
   };
 };
+
+const isWhenQuestion = (question: { key?: string; question?: string }) => {
+  const marker = `${question.key || ''} ${question.question || ''}`.toLowerCase();
+  return /\b(when|date|time|day)\b/.test(marker);
+};
+
+const normalizeIntake = (input: string, intake: IntakeResult): IntakeResult => ({
+  ...intake,
+  title: intake.title || titleCase(input),
+  missingCritical: (intake.missingCritical || []).filter((item) => item !== 'when'),
+  clarifyingQuestions: (intake.clarifyingQuestions || []).filter((q) => !isWhenQuestion(q)),
+  roadmapSteps: intake.roadmapSteps || [],
+  extractedEntities: intake.extractedEntities || {},
+});
 
 export function useAIIntake() {
   const [session, setSession] = useState<IntakeSession>(initial);
@@ -96,13 +109,13 @@ export function useAIIntake() {
         body: JSON.stringify({ input, datetime: new Date().toISOString() }),
       });
       if (!res.ok) throw new Error('intake unavailable');
-      const intake = (await res.json()) as IntakeResult;
+      const intake = normalizeIntake(input, (await res.json()) as IntakeResult);
       applyIntake(intake);
       return intake;
     } catch {
       // If the preview/API route/Gemini quota fails, keep the UX alive with
       // deterministic local intake instead of clearing the input silently.
-      const intake = fallbackIntake(input);
+      const intake = normalizeIntake(input, fallbackIntake(input));
       applyIntake(intake);
       return intake;
     }

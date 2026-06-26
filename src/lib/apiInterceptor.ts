@@ -109,9 +109,8 @@ const localIntake = (input = '') => {
       person: hasWho ? (input.match(/with\s+([A-Za-z]+)/)?.[1] || (/client/.test(lower) ? 'client' : 'team')) : '',
       location: '',
     },
-    missingCritical: [!hasWhen ? 'when' : '', complexity !== 'simple' && !hasWho ? 'who' : ''].filter(Boolean),
+    missingCritical: [complexity !== 'simple' && !hasWho ? 'who' : ''].filter(Boolean),
     clarifyingQuestions: [
-      ...(!hasWhen ? [{ key: 'when', question: 'When is this?', chips: ['Today', 'Tomorrow', 'This week', 'Pick a date'] }] : []),
       ...(complexity !== 'simple' && !hasWho ? [{ key: 'who', question: 'Who is involved?', chips: ['Client', 'Team', 'Friend', 'Just me'] }] : []),
     ],
     priority,
@@ -168,15 +167,15 @@ Return ONLY this JSON schema:
  "taskType":"meeting|event|payment|errand|social|other",
  "complexity":"simple|medium|complex",
  "extractedEntities":{"time":"","person":"","location":""},
- "missingCritical":["when","who"],
- "clarifyingQuestions":[{"key":"when","question":"When is this?","chips":["Today","Tomorrow","This week","Pick a date"]}],
+ "missingCritical":["who"],
+ "clarifyingQuestions":[{"key":"who","question":"Who is involved?","chips":["Client","Team","Friend","Just me"]}],
  "priority":"high|medium|low",
  "priorityReason":"",
  "roadmapSteps":[{"step":"","timing":""}],
  "userPace":"hurried|casual"
 }
 Rules: simple=single action no person; medium=involves another person; complex=professional event needing prep.
-Professional/payment/deadline -> high. Casual social -> low unless urgent. Within 2h -> high.
+Professional/payment/deadline -> high. Casual social -> low unless urgent. Within 2h -> high. Date/time is optional; do not ask for it if the user did not mention it.
 Current datetime: ${body.datetime}`;
     try {
       const out = await callGeminiJSON(`User input: ${body.input}`, sys);
