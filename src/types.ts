@@ -11,6 +11,18 @@ export interface RoadmapStep {
   done?: boolean;
 }
 
+export interface Habit {
+  id: string;
+  name: string;
+  emoji?: string;
+  category: 'work' | 'study' | 'personal' | 'finance' | 'health';
+  cadence: 'daily' | 'weekly';
+  target_per_week: number; // 1-7
+  match_keywords: string[]; // used to count related task completions
+  reason: string;           // why Gemini suggested it
+  created_at: string;
+}
+
 export interface Task {
   id: string;
   title: string;
