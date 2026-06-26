@@ -145,7 +145,89 @@ Return ONLY this JSON schema:
   }
 });
 
-// Endpoint 2: Checklist Generator
+// Endpoint: Tasks 2.0 AI Intake (structured clarification + roadmap)
+app.post("/api/gemini/intake", async (req, res) => {
+  const { input, datetime } = req.body || {};
+  if (!input) return res.status(400).json({ error: "Input required." });
+
+  const buildFallback = () => {
+    const lower = String(input).toLowerCase();
+    const isMeeting = /meet|call|interview|client|presentation|standup|sync/.test(lower);
+    const isPayment = /pay|bill|rent|invoice|transfer/.test(lower);
+    const isSocial = /lunch|dinner|coffee|drinks|hang|catch up/.test(lower);
+    const taskType = isMeeting ? 'meeting' : isPayment ? 'payment' : isSocial ? 'social' : 'errand';
+    const complexity = isMeeting ? 'complex' : isSocial ? 'medium' : 'simple';
+    const hasTime = /\b(\d{1,2}(:\d{2})?\s?(am|pm)|today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(input);
+    const hasPerson = /\bwith\s+\w+|@\w+/i.test(input);
+    const missing: string[] = [];
+    if (!hasTime) missing.push('when');
+    if ((isMeeting || isSocial) && !hasPerson) missing.push('who');
+    const questions = missing.map((k) =>
+      k === 'when'
+        ? { key: 'when', question: 'When is this?', chips: ['Today', 'Tomorrow', 'This week', 'Pick a date'] }
+        : { key: 'who', question: 'Who is this with?', chips: ['Just me', 'Team', 'Client', 'Someone else'] }
+    );
+    return {
+      title: input.charAt(0).toUpperCase() + input.slice(1),
+      taskType,
+      complexity,
+      extractedEntities: {},
+      missingCritical: missing,
+      clarifyingQuestions: questions,
+      priority: isPayment || isMeeting ? 'high' : isSocial ? 'low' : 'medium',
+      priorityReason: isPayment ? 'Payment / deadline.' : isMeeting ? 'Professional commitment.' : 'Default.',
+      roadmapSteps: complexity === 'complex' ? [
+        { step: 'Confirm time & attendees', timing: 'Today' },
+        { step: 'Prep agenda or notes', timing: '1 day before' },
+        { step: 'Review key points', timing: '30 min before' },
+        { step: 'Attend & follow up', timing: 'After' },
+      ] : [],
+      userPace: 'casual' as const,
+      live: false,
+    };
+  };
+
+  try {
+    const ai = getGemini();
+    const prompt = `You are Pulse AI for Tasks 2.0. Parse this task and return STRICT JSON only.
+
+Current datetime: ${datetime || new Date().toISOString()}
+User input: "${input}"
+
+Rules:
+- complexity: "simple" (single action, no person), "medium" (involves another person), "complex" (professional event requiring prep — meeting, interview, presentation, client event).
+- priority: professional/client/payment/deadline -> "high"; due within 2 hours -> "high"; casual social -> "low" unless urgent.
+- missingCritical: only include "when" if no time is mentioned, "who" if person-dependent task without a name.
+- clarifyingQuestions: one per missing critical field. Each has 3-4 short tap chips. For "when" use ["Today","Tomorrow","This week","Pick a date"]; for "who" use sensible tap options.
+- roadmapSteps: ONLY for "complex" tasks. 3-5 ordered prep steps with relative timing like "1 day before" / "30 min before".
+- userPace: "hurried" if input is terse/imperative (<6 words, no fluff), else "casual".
+
+Return JSON:
+{
+  "title": "string (action-verb first, <= 8 words)",
+  "taskType": "meeting"|"event"|"payment"|"errand"|"social"|"other",
+  "complexity": "simple"|"medium"|"complex",
+  "extractedEntities": {"time": "", "person": "", "location": ""},
+  "missingCritical": ["when"|"who"],
+  "clarifyingQuestions": [{"key":"when","question":"...","chips":["..."]}],
+  "priority": "high"|"medium"|"low",
+  "priorityReason": "string",
+  "roadmapSteps": [{"step":"...","timing":"..."}],
+  "userPace": "hurried"|"casual"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" },
+    });
+    const parsed = JSON.parse(response.text || "{}");
+    res.json({ ...parsed, live: true });
+  } catch (e: any) {
+    console.warn("intake fallback:", e?.message);
+    res.json(buildFallback());
+  }
+});
 app.post("/api/gemini/checklist", async (req, res) => {
   const { title, deadline_human, estimated_minutes, difficulty } = req.body;
   if (!title) {
