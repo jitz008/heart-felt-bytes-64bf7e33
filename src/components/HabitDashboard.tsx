@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import { BarChart2, Flame, Sparkles, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart2, Flame, Sparkles, Activity, Plus, X, RefreshCw, Trash2 } from 'lucide-react';
 import { Task, PulseScore } from '../types';
 import DonutChart from './ui/donut-chart';
+import { useHabits, habitStreak } from '../hooks/useHabits';
 
 interface HabitDashboardProps {
   tasks: Task[];
   pulseScore: PulseScore;
   darkMode: boolean;
+  userId: string | null;
+  isFirebase: boolean;
 }
 
-export default function HabitDashboard({ tasks, pulseScore }: HabitDashboardProps) {
+export default function HabitDashboard({ tasks, pulseScore, userId, isFirebase }: HabitDashboardProps) {
   const [timeframe, setTimeframe] = useState<'7' | '15' | '30'>('7');
+  const {
+    habits, suggestions, suggestLoading, suggestError,
+    refreshSuggestions, acceptHabit, dismissSuggestion, removeHabit,
+  } = useHabits(userId, isFirebase);
+
+  // Auto-fetch suggestions on first mount when we have tasks but no habits yet
+  useEffect(() => {
+    if (tasks.length > 0 && habits.length === 0 && suggestions.length === 0 && !suggestLoading) {
+      refreshSuggestions(tasks);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks.length, habits.length]);
 
   const getMetrics = () => {
     switch (timeframe) {
