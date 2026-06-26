@@ -1,15 +1,26 @@
 // Client-side Gemini caller used when the Express server isn't available
-// (e.g. Lovable preview). Reads VITE_GEMINI_API_KEY from build env.
+// (e.g. Lovable preview). Reads the key from localStorage so it stays
+// out of the bundled source.
 
-const API_KEY =
-  (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-  (import.meta as any).env?.VITE_GOOGLE_GEMINI_API_KEY ||
-  '';
+const LS_KEY = 'pulse_gemini_api_key';
+
+function getApiKey(): string {
+  if (typeof window === 'undefined') return '';
+  return (
+    window.localStorage.getItem(LS_KEY) ||
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    ''
+  );
+}
+
+export function setGeminiApiKey(key: string) {
+  if (typeof window !== 'undefined') window.localStorage.setItem(LS_KEY, key);
+}
 
 const MODEL = 'gemini-2.0-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-export const hasClientGeminiKey = () => Boolean(API_KEY);
+export const hasClientGeminiKey = () => Boolean(getApiKey());
 
 export async function callGeminiJSON(prompt: string, systemInstruction?: string): Promise<any> {
   if (!API_KEY) throw new Error('VITE_GEMINI_API_KEY not configured');
