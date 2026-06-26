@@ -205,7 +205,7 @@ export default function App() {
           {activeTab === 'dayplan' ? (
             <DayPlanView tasks={tasks} dayPlan={dayPlan} toggleComplete={toggleComplete} darkMode={darkMode} />
           ) : activeTab === 'habits' ? (
-            <HabitDashboard tasks={tasks} pulseScore={pulseScore} darkMode={darkMode} />
+            <HabitDashboard tasks={tasks} pulseScore={pulseScore} darkMode={darkMode} userId={user?.uid || null} isFirebase={!!user} />
           ) : activeTab === 'all' ? (
             <HomeView
               tasks={tasks}
