@@ -254,7 +254,17 @@ export function installApiInterceptor() {
 
     try {
       const body = init?.body ? JSON.parse(init.body as string) : {};
-      const data = await handlers[matched](body);
+      let data: any;
+      try {
+        data = await handlers[matched](body);
+      } catch (handlerError) {
+        // Gemini can be missing, rate-limited, or blocked in preview. The app
+        // should still create useful tasks, so fall back per endpoint here.
+        if (matched === '/api/gemini/intake') data = localIntake(body.input);
+        else if (matched === '/api/gemini/parse') data = localParseTask(body.input);
+        else if (matched === '/api/gemini/checklist') data = localChecklist(body.title, body.estimated_minutes);
+        else throw handlerError;
+      }
       return new Response(JSON.stringify(data), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
