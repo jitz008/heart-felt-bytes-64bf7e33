@@ -46,7 +46,9 @@ function formatDateLabel(dateString: string | undefined | null): string | null {
 export default function HomeView({
   tasks,
   addTaskNatural,
+  addTaskStructured,
   toggleComplete,
+  toggleRoadmapStep,
   aiLoading,
   aiStatusMessage,
 }: HomeViewProps) {
@@ -57,13 +59,38 @@ export default function HomeView({
   const recognitionRef = useRef<any>(null);
   const silenceTimer = useRef<number | null>(null);
   const typed = useTypewriterPlaceholder();
+  const { session, start, answer, finish, reset } = useAIIntake();
 
-  const submit = (text: string) => {
+  const submit = async (text: string) => {
     const t = text.trim();
     if (!t) return;
-    addTaskNatural(t);
     setInput('');
     setInterim('');
+    // Try structured intake first; if unavailable, fall back to legacy parse
+    if (addTaskStructured) {
+      const intake = await start(t);
+      if (!intake) {
+        addTaskNatural(t);
+      } else if (
+        intake.userPace === 'hurried' ||
+        !intake.clarifyingQuestions ||
+        intake.clarifyingQuestions.length === 0
+      ) {
+        await addTaskStructured(intake, {});
+        finish();
+        setTimeout(reset, 600);
+      }
+      // else: ChipClarifier handles the rest via confirm callback below
+    } else {
+      addTaskNatural(t);
+    }
+  };
+
+  const handleConfirmIntake = async () => {
+    if (!session.intake || !addTaskStructured) return;
+    await addTaskStructured(session.intake, session.answers);
+    finish();
+    setTimeout(reset, 600);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
