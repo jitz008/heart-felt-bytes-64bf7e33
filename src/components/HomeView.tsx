@@ -1,14 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Mic, Plus, Check } from 'lucide-react';
-import { Task } from '../types';
+import { Sparkles, Mic, Plus, Check, MapPin, User as UserIcon } from 'lucide-react';
+import { Task, IntakeResult } from '../types';
 import { GradientDots } from './ui/gradient-dots';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
+import { useAIIntake } from '../hooks/useAIIntake';
+import ChipClarifier from './ChipClarifier';
 
 interface HomeViewProps {
   tasks: Task[];
   addTaskNatural: (input: string) => void;
+  addTaskStructured?: (intake: IntakeResult, answers: Record<string, string>) => Promise<void>;
   toggleComplete: (id: string) => void;
+  toggleRoadmapStep?: (taskId: string, stepIndex: number) => void;
   aiLoading: boolean;
   aiStatusMessage?: string;
 }
