@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import { BarChart2, Flame, Sparkles, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart2, Flame, Sparkles, Activity, Plus, X, RefreshCw, Trash2 } from 'lucide-react';
 import { Task, PulseScore } from '../types';
 import DonutChart from './ui/donut-chart';
+import { useHabits, habitStreak } from '../hooks/useHabits';
 
 interface HabitDashboardProps {
   tasks: Task[];
   pulseScore: PulseScore;
   darkMode: boolean;
+  userId: string | null;
+  isFirebase: boolean;
 }
 
-export default function HabitDashboard({ tasks, pulseScore }: HabitDashboardProps) {
+export default function HabitDashboard({ tasks, pulseScore, userId, isFirebase }: HabitDashboardProps) {
   const [timeframe, setTimeframe] = useState<'7' | '15' | '30'>('7');
+  const {
+    habits, suggestions, suggestLoading, suggestError,
+    refreshSuggestions, acceptHabit, dismissSuggestion, removeHabit,
+  } = useHabits(userId, isFirebase);
+
+  // Auto-fetch suggestions on first mount when we have tasks but no habits yet
+  useEffect(() => {
+    if (tasks.length > 0 && habits.length === 0 && suggestions.length === 0 && !suggestLoading) {
+      refreshSuggestions(tasks);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks.length, habits.length]);
 
   const getMetrics = () => {
     switch (timeframe) {
@@ -161,6 +176,120 @@ export default function HabitDashboard({ tasks, pulseScore }: HabitDashboardProp
               </div>
             </Card>
           </div>
+
+          {/* Your habits — auto-derived from task history */}
+          {habits.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <Eyebrow icon={<Flame className="w-3 h-3" />}>Your habits · last 7 days</Eyebrow>
+                <button
+                  onClick={() => refreshSuggestions(tasks)}
+                  className="text-[10px] uppercase tracking-[0.16em] text-white/40 hover:text-white/70 flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-3 h-3" /> suggest more
+                </button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {habits.map((h) => {
+                  const { done, pct } = habitStreak(h, tasks, 7);
+                  const target = h.cadence === 'daily' ? 7 : h.target_per_week;
+                  return (
+                    <div key={h.id} className="flex flex-col gap-1.5 group">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/80 font-light flex items-center gap-2">
+                          <span className="text-base leading-none">{h.emoji}</span>
+                          {h.name}
+                          <span className="text-white/30 text-[10px] uppercase tracking-wider">{h.cadence}</span>
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-white/35 font-mono text-[10px]">{done}/{target}</span>
+                          <button
+                            onClick={() => removeHabit(h.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/70"
+                            aria-label="Remove habit"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="h-[3px] rounded-full overflow-hidden bg-white/[0.05]">
+                        <div className="h-full rounded-full bg-white/50 transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
+          {/* Suggested by Gemini */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <Eyebrow icon={<Sparkles className="w-3 h-3" />}>
+                {habits.length === 0 ? 'Plan your habits · Gemini' : 'More suggestions'}
+              </Eyebrow>
+              <button
+                onClick={() => refreshSuggestions(tasks)}
+                disabled={suggestLoading}
+                className="text-[10px] uppercase tracking-[0.16em] text-white/40 hover:text-white/70 flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${suggestLoading ? 'animate-spin' : ''}`} />
+                {suggestLoading ? 'thinking' : 'regenerate'}
+              </button>
+            </div>
+
+            {suggestError && (
+              <p className="text-[11px] text-white/40 mb-3">{suggestError}</p>
+            )}
+
+            {suggestions.length === 0 && !suggestLoading && habits.length === 0 && (
+              <p className="text-sm text-white/45 font-light">
+                Complete a few tasks first — Gemini will read your patterns and propose habits worth tracking.
+              </p>
+            )}
+
+            {suggestions.length === 0 && !suggestLoading && habits.length > 0 && (
+              <p className="text-sm text-white/45 font-light">
+                No new suggestions right now. Tap regenerate after completing more tasks.
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2.5">
+              {suggestions.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-start justify-between gap-3 p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-sm text-white/85 font-light">
+                      <span className="text-base leading-none">{s.emoji}</span>
+                      <span className="truncate">{s.name}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/30">
+                        {s.cadence} · {s.target_per_week}×/wk
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white/45 mt-1 leading-relaxed">{s.reason}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => acceptHabit(s)}
+                      className="px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider bg-white/[0.08] hover:bg-white/[0.14] text-white/85 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> add
+                    </button>
+                    <button
+                      onClick={() => dismissSuggestion(s.id)}
+                      className="p-1.5 rounded-full text-white/35 hover:text-white/70 hover:bg-white/[0.05]"
+                      aria-label="Dismiss"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
 
           {/* Consistency history */}
           <Card>
