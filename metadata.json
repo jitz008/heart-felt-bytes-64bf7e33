@@ -1,0 +1,6 @@
+{
+  "name": "Pulse",
+  "description": "Google Tasks, but your AI knows what matters most.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

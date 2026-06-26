@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "Represents a user task with AI-sorted priority and checklist actions",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique task identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title or task name"
+        },
+        "deadline_iso": {
+          "type": "string",
+          "description": "ISO format string for the task deadline"
+        },
+        "deadline_human": {
+          "type": "string",
+          "description": "Human-readable deadline format"
+        },
+        "estimated_minutes": {
+          "type": "integer",
+          "description": "Estimated time to complete in minutes"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"],
+          "description": "Estimated execution difficulty"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["critical", "high", "later"],
+          "description": "Urgency classification"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["work", "study", "personal", "finance", "health"],
+          "description": "Task Category"
+        },
+        "priority_score": {
+          "type": "integer",
+          "description": "AI-calculated priority score"
+        },
+        "calendar_conflict": {
+          "type": "string",
+          "description": "Conflicting calendar event summary if any"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "AI dynamic sorting justification reasoning"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "done", "missed"],
+          "description": "Current status of the task"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "completed_at": {
+          "type": "string",
+          "description": "Completion timestamp"
+        },
+        "checklist": {
+          "type": "array",
+          "description": "AI dynamic action breakdown checklist"
+        },
+        "starred": {
+          "type": "boolean",
+          "description": "Starred state"
+        },
+        "list": {
+          "type": "string",
+          "description": "Task list category name"
+        }
+      },
+      "required": ["id", "title", "estimated_minutes", "difficulty", "urgency", "category", "priority_score", "status", "created_at", "checklist"]
+    },
+    "List": {
+      "title": "List",
+      "description": "Represents a user-defined category folder of tasks",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "List name"
+        }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User specific tasks collection"
+    },
+    "/users/{userId}/lists/{listId}": {
+      "schema": "List",
+      "description": "User specific list names collection"
+    }
+  }
+}
