@@ -230,6 +230,49 @@ Current datetime: ${body.datetime}`;
       streak: Math.max(0, Math.min(9, done)),
     };
   },
+
+  '/api/gemini/suggest-habits': async (body) => {
+    const tasks = Array.isArray(body.tasks) ? body.tasks : [];
+    const existing: string[] = Array.isArray(body.existing) ? body.existing : [];
+    const sys = `You analyze a user's recent tasks and propose 3-5 daily/weekly HABITS that would
+strengthen the recurring patterns you observe. Return ONLY a JSON array of:
+{"name":string,"emoji":string,"category":"work|study|personal|finance|health",
+ "cadence":"daily|weekly","target_per_week":1-7,
+ "match_keywords":[lowercase keyword strings present in similar task titles],
+ "reason":"one short sentence citing the observed pattern"}
+Rules: do not repeat any habit already in the existing list. Keep names under 28 chars.
+Prefer habits the user can realistically check off given their task themes.`;
+    try {
+      const out = await callGeminiJSON(
+        `Existing habits: ${JSON.stringify(existing)}\nRecent tasks: ${JSON.stringify(tasks)}`,
+        sys,
+      );
+      const list = Array.isArray(out) ? out : out?.habits || [];
+      if (list.length) return list;
+    } catch {
+      /* fall through to local */
+    }
+    // Local fallback: derive habits from category frequencies
+    const counts: Record<string, number> = {};
+    for (const t of tasks) counts[t.category] = (counts[t.category] || 0) + 1;
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const presets: Record<string, any> = {
+      work:     { name: 'Deep work block', emoji: '🧠', keywords: ['project', 'report', 'deck'] },
+      study:    { name: 'Read 20 minutes', emoji: '📖', keywords: ['read', 'study', 'course'] },
+      personal: { name: 'Daily reset',     emoji: '🌿', keywords: ['clean', 'tidy', 'plan'] },
+      finance:  { name: 'Review finances', emoji: '💸', keywords: ['pay', 'bill', 'invoice'] },
+      health:   { name: 'Move your body',  emoji: '🏃', keywords: ['gym', 'walk', 'run'] },
+    };
+    return top.map(([cat, n]) => ({
+      name: presets[cat]?.name || `${cat} routine`,
+      emoji: presets[cat]?.emoji || '✦',
+      category: cat,
+      cadence: 'daily',
+      target_per_week: 5,
+      match_keywords: presets[cat]?.keywords || [cat],
+      reason: `You logged ${n} ${cat} task${n === 1 ? '' : 's'} recently — make it a habit.`,
+    }));
+  },
 };
 
 export function installApiInterceptor() {
