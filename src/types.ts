@@ -45,12 +45,23 @@ export interface Task {
   googleTaskId?: string;
   googleTaskListId?: string;
   // ───── Tasks 2.0 AI intake additions ─────
-  taskType?: 'meeting' | 'event' | 'payment' | 'errand' | 'social' | 'other';
+  taskType?: 'meeting' | 'event' | 'payment' | 'errand' | 'social' | 'interview' | 'health' | 'family' | 'other' | string;
   complexity?: 'simple' | 'medium' | 'complex';
   person?: string;
   location?: string;
+  topic?: string;
+  amount?: string;
   roadmapSteps?: RoadmapStep[];
   priorityReason?: string;
+  priorityScore?: number; // 0-150 rubric score
+  productivityRecommendation?: {
+    summary: string;
+    tips: string[];
+    aiInsight: string;
+  } | null;
+  conflict_status?: 'none' | 'pending' | 'resolved';
+  // Allow AI's three-tier priority alongside legacy urgency
+  priority?: 'high' | 'medium' | 'low';
 }
 
 export interface ClarifyingQuestion {
