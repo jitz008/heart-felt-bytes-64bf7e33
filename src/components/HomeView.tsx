@@ -76,12 +76,6 @@ export default function HomeView({
     submit(input);
   };
 
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submit(input);
-  };
-
   const toggleRecording = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
@@ -260,13 +254,14 @@ export default function HomeView({
             </div>
           </form>
 
-          <ChipClarifier
-            session={session}
-            onAnswer={answer}
-            onConfirm={handleConfirmIntake}
-            onAddDetails={handleAddDetails}
-            onCancel={reset}
+          <AIConversationPanel
+            state={conversation.state}
+            onAnswer={conversation.answer}
+            onConfirm={conversation.confirm}
+            onAddMore={conversation.addMore}
+            onCancel={conversation.reset}
           />
+
         </motion.section>
 
         {/* ───────── OVERALL EMPTY ───────── */}
