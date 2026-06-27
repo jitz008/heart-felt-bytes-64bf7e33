@@ -445,7 +445,9 @@ function PriorityColumn({
 
       <div className="flex flex-col gap-2">
         {tasks.map((t) => {
-          const hasRoadmap = t.complexity === 'complex' && t.roadmapSteps && t.roadmapSteps.length > 0;
+          const hasRoadmap = !!(t.roadmapSteps && t.roadmapSteps.length > 0);
+          const hasInsight = !!(t.productivityRecommendation?.summary || t.productivityRecommendation?.aiInsight || (t.productivityRecommendation?.tips && t.productivityRecommendation.tips.length > 0));
+          const canExpand = hasRoadmap || hasInsight;
           const isOpen = expanded[t.id] ?? true;
           return (
             <div
