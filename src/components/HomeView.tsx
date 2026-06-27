@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Mic, Plus, Check, MapPin, User as UserIcon } from 'lucide-react';
-import { Task, IntakeResult } from '../types';
+import { Task } from '../types';
+import { TaskAIResponse } from '../lib/gemini';
 import { GradientDots } from './ui/gradient-dots';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
-import { useAIIntake } from '../hooks/useAIIntake';
-import ChipClarifier from './ChipClarifier';
+import { useAIConversation } from '../hooks/useAIConversation';
+import AIConversationPanel from './AIConversationPanel';
 
 interface HomeViewProps {
   tasks: Task[];
