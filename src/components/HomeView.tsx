@@ -471,12 +471,13 @@ function PriorityColumn({
                 />
                 <span className={`dot ${dotColor}`} style={{ width: 5, height: 5 }} />
                 <span className="text-[12px] text-white/75 flex-1 truncate">{t.title}</span>
-                {hasRoadmap && (
+                {canExpand && (
                   <button
                     onClick={() => setExpanded((s) => ({ ...s, [t.id]: !isOpen }))}
                     className="text-[10px] text-white/40 hover:text-white/70"
+                    title={hasRoadmap ? 'Roadmap' : 'AI context'}
                   >
-                    {isOpen ? '−' : `+${t.roadmapSteps!.length}`}
+                    {isOpen ? '−' : hasRoadmap ? `+${t.roadmapSteps!.length}` : '+'}
                   </button>
                 )}
               </div>
