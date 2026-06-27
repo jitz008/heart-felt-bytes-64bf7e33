@@ -1287,6 +1287,7 @@ export function useTasks() {
     deleteTask,
     addTaskNatural,
     addTaskStructured,
+    addTaskFromAI,
     toggleRoadmapStep,
     addManualTask,
     breakTaskDown,
