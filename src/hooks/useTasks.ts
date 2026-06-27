@@ -996,6 +996,76 @@ export function useTasks() {
     }
   };
 
+  // Tasks 2.0 v2 — create task from full TaskAIResponse (no chip-answer map).
+  // Used by the new AIInputBox conversation engine in src/lib/gemini.ts.
+  const addTaskFromAI = async (
+    res: import('../lib/gemini').TaskAIResponse,
+  ): Promise<Task> => {
+    const urgency: Task['urgency'] =
+      res.priority === 'high' ? 'critical' : res.priority === 'medium' ? 'high' : 'later';
+
+    const time = res.extractedEntities?.time || null;
+    let deadline_iso: string | undefined;
+    let deadline_human: string | undefined;
+    if (time) {
+      const d = new Date(time);
+      if (!isNaN(d.getTime())) {
+        deadline_iso = d.toISOString();
+      }
+      deadline_human = res.extractedEntities?.timeDisplay || time;
+    } else if (res.extractedEntities?.timeDisplay) {
+      deadline_human = res.extractedEntities.timeDisplay;
+    }
+
+    const category: Task['category'] =
+      res.taskType === 'payment' ? 'finance'
+      : res.taskType === 'meeting' || res.taskType === 'interview' ? 'work'
+      : res.taskType === 'health' ? 'health'
+      : 'personal';
+
+    const newTask: Task = {
+      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: res.title,
+      deadline_iso,
+      deadline_human,
+      estimated_minutes: res.complexity === 'complex' ? 60 : res.complexity === 'medium' ? 30 : 15,
+      difficulty: res.complexity === 'complex' ? 'hard' : res.complexity === 'medium' ? 'medium' : 'easy',
+      urgency,
+      category,
+      priority_score: Math.max(1, Math.min(10, Math.round((res.priorityScore || 0) / 10))),
+      calendar_conflict: null,
+      reasoning: res.priorityReason || '',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      checklist: [],
+      starred: false,
+      list: activeList,
+      taskType: res.taskType,
+      complexity: res.complexity,
+      person: res.extractedEntities?.person || undefined,
+      location: res.extractedEntities?.location || undefined,
+      topic: res.extractedEntities?.topic || undefined,
+      amount: res.extractedEntities?.amount || undefined,
+      roadmapSteps: (res.roadmapSteps || []).map((s) => ({
+        step: s.step,
+        timing: s.timing,
+        done: false,
+      })),
+      priorityReason: res.priorityReason,
+      priorityScore: res.priorityScore,
+      priority: res.priority,
+      productivityRecommendation: res.productivityRecommendation || null,
+      conflict_status: res.conflictCheckNeeded ? 'pending' : 'none',
+    };
+
+    if (isFirebase && userId) {
+      await setDoc(doc(db, 'users', userId, 'tasks', newTask.id), newTask);
+    } else {
+      saveTasksLocal([newTask, ...tasks]);
+    }
+    return newTask;
+  };
+
   // Toggle a roadmap step done state
   const toggleRoadmapStep = async (taskId: string, stepIndex: number) => {
     const task = tasks.find((t) => t.id === taskId);
