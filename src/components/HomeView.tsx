@@ -527,6 +527,41 @@ function PriorityColumn({
                   ))}
                 </div>
               )}
+              {isOpen && (t.productivityRecommendation || t.priorityReason) && (
+                <div className="flex flex-col gap-1.5 px-3 pb-2.5 pt-2 border-t border-white/[0.04] mt-1">
+                  {t.productivityRecommendation?.summary && (
+                    <p className="text-[10.5px] text-white/55 leading-snug">
+                      {t.productivityRecommendation.summary}
+                    </p>
+                  )}
+                  {t.productivityRecommendation?.tips && t.productivityRecommendation.tips.length > 0 && (
+                    <ul className="flex flex-col gap-0.5 mt-0.5">
+                      {t.productivityRecommendation.tips.slice(0, 3).map((tip, i) => (
+                        <li key={i} className="flex gap-1.5 text-[10px] text-white/50 leading-snug">
+                          <span className="text-[#4f8ef7]/70">›</span>
+                          <span className="flex-1">{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {t.productivityRecommendation?.aiInsight && (
+                    <div
+                      className="flex items-start gap-1.5 mt-1 rounded-md px-2 py-1.5"
+                      style={{ background: 'rgba(79,142,247,0.06)', border: '1px solid rgba(79,142,247,0.14)' }}
+                    >
+                      <Sparkles className="w-2.5 h-2.5 mt-[2px] text-[#4f8ef7] shrink-0" />
+                      <span className="text-[10px] text-white/60 leading-snug">
+                        {t.productivityRecommendation.aiInsight}
+                      </span>
+                    </div>
+                  )}
+                  {t.priorityReason && (
+                    <p className="text-[9.5px] text-white/30 italic mt-0.5">
+                      {t.priorityReason}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
