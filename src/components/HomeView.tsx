@@ -57,6 +57,7 @@ export default function HomeView({
   const [focused, setFocused] = useState(false);
   const [recording, setRecording] = useState(false);
   const [interim, setInterim] = useState('');
+  const interimRef = useRef('');
   const recognitionRef = useRef<any>(null);
   const silenceTimer = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +69,7 @@ export default function HomeView({
     if (!t) return;
     setInput('');
     setInterim('');
+    interimRef.current = '';
     await conversation.submit(t);
   };
 
@@ -91,18 +93,23 @@ export default function HomeView({
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
+    interimRef.current = '';
     rec.onresult = (ev: any) => {
       let txt = '';
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      for (let i = 0; i < ev.results.length; i++) {
         txt += ev.results[i][0].transcript;
       }
+      interimRef.current = txt;
       setInterim(txt);
       if (silenceTimer.current) window.clearTimeout(silenceTimer.current);
-      silenceTimer.current = window.setTimeout(() => rec.stop(), 800);
+      silenceTimer.current = window.setTimeout(() => {
+        try { rec.stop(); } catch {}
+      }, 1100);
     };
     rec.onend = () => {
       setRecording(false);
-      if (interim.trim()) submit(interim);
+      const finalText = interimRef.current.trim();
+      if (finalText) submit(finalText);
     };
     rec.onerror = () => setRecording(false);
     recognitionRef.current = rec;
@@ -438,7 +445,9 @@ function PriorityColumn({
 
       <div className="flex flex-col gap-2">
         {tasks.map((t) => {
-          const hasRoadmap = t.complexity === 'complex' && t.roadmapSteps && t.roadmapSteps.length > 0;
+          const hasRoadmap = !!(t.roadmapSteps && t.roadmapSteps.length > 0);
+          const hasInsight = !!(t.productivityRecommendation?.summary || t.productivityRecommendation?.aiInsight || (t.productivityRecommendation?.tips && t.productivityRecommendation.tips.length > 0));
+          const canExpand = hasRoadmap || hasInsight;
           const isOpen = expanded[t.id] ?? true;
           return (
             <div
@@ -462,12 +471,13 @@ function PriorityColumn({
                 />
                 <span className={`dot ${dotColor}`} style={{ width: 5, height: 5 }} />
                 <span className="text-[12px] text-white/75 flex-1 truncate">{t.title}</span>
-                {hasRoadmap && (
+                {canExpand && (
                   <button
                     onClick={() => setExpanded((s) => ({ ...s, [t.id]: !isOpen }))}
                     className="text-[10px] text-white/40 hover:text-white/70"
+                    title={hasRoadmap ? 'Roadmap' : 'AI context'}
                   >
-                    {isOpen ? '−' : `+${t.roadmapSteps!.length}`}
+                    {isOpen ? '−' : hasRoadmap ? `+${t.roadmapSteps!.length}` : '+'}
                   </button>
                 )}
               </div>
@@ -518,6 +528,41 @@ function PriorityColumn({
                       </span>
                     </button>
                   ))}
+                </div>
+              )}
+              {isOpen && (t.productivityRecommendation || t.priorityReason) && (
+                <div className="flex flex-col gap-1.5 px-3 pb-2.5 pt-2 border-t border-white/[0.04] mt-1">
+                  {t.productivityRecommendation?.summary && (
+                    <p className="text-[10.5px] text-white/55 leading-snug">
+                      {t.productivityRecommendation.summary}
+                    </p>
+                  )}
+                  {t.productivityRecommendation?.tips && t.productivityRecommendation.tips.length > 0 && (
+                    <ul className="flex flex-col gap-0.5 mt-0.5">
+                      {t.productivityRecommendation.tips.slice(0, 3).map((tip, i) => (
+                        <li key={i} className="flex gap-1.5 text-[10px] text-white/50 leading-snug">
+                          <span className="text-[#4f8ef7]/70">›</span>
+                          <span className="flex-1">{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {t.productivityRecommendation?.aiInsight && (
+                    <div
+                      className="flex items-start gap-1.5 mt-1 rounded-md px-2 py-1.5"
+                      style={{ background: 'rgba(79,142,247,0.06)', border: '1px solid rgba(79,142,247,0.14)' }}
+                    >
+                      <Sparkles className="w-2.5 h-2.5 mt-[2px] text-[#4f8ef7] shrink-0" />
+                      <span className="text-[10px] text-white/60 leading-snug">
+                        {t.productivityRecommendation.aiInsight}
+                      </span>
+                    </div>
+                  )}
+                  {t.priorityReason && (
+                    <p className="text-[9.5px] text-white/30 italic mt-0.5">
+                      {t.priorityReason}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
