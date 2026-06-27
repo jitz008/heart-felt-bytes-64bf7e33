@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Mic, Plus, Check, MapPin, User as UserIcon } from 'lucide-react';
-import { Task, IntakeResult } from '../types';
+import { Task } from '../types';
+import { TaskAIResponse } from '../lib/gemini';
 import { GradientDots } from './ui/gradient-dots';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
-import { useAIIntake } from '../hooks/useAIIntake';
-import ChipClarifier from './ChipClarifier';
+import { useAIConversation } from '../hooks/useAIConversation';
+import AIConversationPanel from './AIConversationPanel';
 
 interface HomeViewProps {
   tasks: Task[];
   addTaskNatural: (input: string) => void;
-  addTaskStructured?: (intake: IntakeResult, answers: Record<string, string>) => Promise<void>;
+  addTaskFromAI: (res: TaskAIResponse) => Promise<Task>;
   toggleComplete: (id: string) => void;
   toggleRoadmapStep?: (taskId: string, stepIndex: number) => void;
   aiLoading: boolean;
@@ -46,7 +47,7 @@ function formatDateLabel(dateString: string | undefined | null): string | null {
 export default function HomeView({
   tasks,
   addTaskNatural,
-  addTaskStructured,
+  addTaskFromAI,
   toggleComplete,
   toggleRoadmapStep,
   aiLoading,
@@ -60,47 +61,14 @@ export default function HomeView({
   const silenceTimer = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typed = useTypewriterPlaceholder();
-  const { session, start, answer, finish, reset } = useAIIntake();
+  const conversation = useAIConversation({ tasks, addTaskFromAI });
 
   const submit = async (text: string) => {
     const t = text.trim();
     if (!t) return;
     setInput('');
     setInterim('');
-    // Try structured intake first; if unavailable, fall back to legacy parse
-    if (addTaskStructured) {
-      const intake = await start(t);
-      if (!intake) {
-        addTaskNatural(t);
-      } else if (
-        intake.userPace === 'hurried' ||
-        !intake.clarifyingQuestions ||
-        intake.clarifyingQuestions.length === 0
-      ) {
-        await addTaskStructured(intake, {});
-        finish();
-        setTimeout(reset, 600);
-      }
-      // else: ChipClarifier handles the rest via confirm callback below
-    } else {
-      addTaskNatural(t);
-    }
-  };
-
-  const handleConfirmIntake = async () => {
-    if (!session.intake || !addTaskStructured) return;
-    await addTaskStructured(session.intake, session.answers);
-    finish();
-    setTimeout(reset, 600);
-  };
-
-  const handleAddDetails = () => {
-    const base = session.rawInput || session.intake?.title || '';
-    const answeredDetails = Object.values(session.answers).filter(Boolean).join(' ');
-    const draft = [base, answeredDetails].filter(Boolean).join(' ').trim();
-    setInput(draft ? `${draft} ` : '');
-    setInterim('');
-    window.requestAnimationFrame(() => inputRef.current?.focus());
+    await conversation.submit(t);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -286,13 +254,14 @@ export default function HomeView({
             </div>
           </form>
 
-          <ChipClarifier
-            session={session}
-            onAnswer={answer}
-            onConfirm={handleConfirmIntake}
-            onAddDetails={handleAddDetails}
-            onCancel={reset}
+          <AIConversationPanel
+            state={conversation.state}
+            onAnswer={conversation.answer}
+            onConfirm={conversation.confirm}
+            onAddMore={conversation.addMore}
+            onCancel={conversation.reset}
           />
+
         </motion.section>
 
         {/* ───────── OVERALL EMPTY ───────── */}
