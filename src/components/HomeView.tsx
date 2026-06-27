@@ -57,6 +57,7 @@ export default function HomeView({
   const [focused, setFocused] = useState(false);
   const [recording, setRecording] = useState(false);
   const [interim, setInterim] = useState('');
+  const interimRef = useRef('');
   const recognitionRef = useRef<any>(null);
   const silenceTimer = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +69,7 @@ export default function HomeView({
     if (!t) return;
     setInput('');
     setInterim('');
+    interimRef.current = '';
     await conversation.submit(t);
   };
 
@@ -91,18 +93,23 @@ export default function HomeView({
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
+    interimRef.current = '';
     rec.onresult = (ev: any) => {
       let txt = '';
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      for (let i = 0; i < ev.results.length; i++) {
         txt += ev.results[i][0].transcript;
       }
+      interimRef.current = txt;
       setInterim(txt);
       if (silenceTimer.current) window.clearTimeout(silenceTimer.current);
-      silenceTimer.current = window.setTimeout(() => rec.stop(), 800);
+      silenceTimer.current = window.setTimeout(() => {
+        try { rec.stop(); } catch {}
+      }, 1100);
     };
     rec.onend = () => {
       setRecording(false);
-      if (interim.trim()) submit(interim);
+      const finalText = interimRef.current.trim();
+      if (finalText) submit(finalText);
     };
     rec.onerror = () => setRecording(false);
     recognitionRef.current = rec;
