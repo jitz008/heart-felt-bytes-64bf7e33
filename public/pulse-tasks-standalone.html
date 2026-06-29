@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pulse Tasks 2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#05070d; --bg-1:#0a1020; --bg-2:#0d1a3a; --bg-3:#143a78;
+    --ink:#e9eef7; --ink-2:rgba(233,238,247,.7); --ink-3:rgba(233,238,247,.45); --ink-4:rgba(233,238,247,.25);
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+    --accent:#4f8ef7; --accent-2:#6366f1; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:'Google Sans','Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg-0);overflow:hidden}
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(1200px 800px at 15% 10%, #1a3a8a 0%, transparent 55%),
+      radial-gradient(1000px 700px at 85% 90%, #0f3460 0%, transparent 60%),
+      radial-gradient(900px 600px at 50% 50%, #143a78 0%, transparent 65%),
+      linear-gradient(180deg,#05070d 0%, #0a1020 100%);
+    animation:breathe 18s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{filter:hue-rotate(0deg) brightness(1)}50%{filter:hue-rotate(8deg) brightness(1.12)}}
+  .glass{background:rgba(15,25,55,.42);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid var(--line);border-radius:16px}
+  .glass-input{background:rgba(15,25,55,.5);border:1px solid var(--line-2);border-radius:12px}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  input,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:8px}
+
+  /* layout */
+  #app{display:grid;grid-template-columns:64px 1fr;height:100vh}
+  .sidebar{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0;background:rgba(8,12,28,.55);backdrop-filter:blur(20px);border-right:1px solid var(--line);width:64px;transition:width .25s ease;overflow:hidden;position:relative;z-index:5}
+  .sidebar:hover{width:240px}
+  .sidebar .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f8ef7,#6366f1);display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:10px}
+  .sidebar .nav{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 12px}
+  .sidebar .nav button{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;color:var(--ink-2);font-size:13px;white-space:nowrap;width:100%;justify-content:flex-start}
+  .sidebar .nav button:hover{background:rgba(255,255,255,.06);color:var(--ink)}
+  .sidebar .nav button.active{background:rgba(79,142,247,.18);color:#cfe0ff}
+  .sidebar .label{opacity:0;transition:opacity .2s ease}
+  .sidebar:hover .label{opacity:1}
+  .sidebar .icon{width:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  .main{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--line);background:rgba(8,12,28,.4);backdrop-filter:blur(16px)}
+  .brand{font-weight:600;font-size:15px;letter-spacing:.2px}
+  .topright{display:flex;align-items:center;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11px;border:1px solid var(--line-2);background:rgba(255,255,255,.04);color:var(--ink-2)}
+  .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .pulse-dot{animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+
+  .content{flex:1;overflow-y:auto;padding:36px 48px 80px}
+  .hero{max-width:920px;margin:0 auto;text-align:center;padding:24px 0 8px}
+  .hero h1{font-size:34px;margin:0 0 8px;font-weight:600;letter-spacing:-.5px}
+  .hero p{margin:0;color:var(--ink-3);font-size:14px}
+
+  .ai-wrap{max-width:760px;margin:24px auto 0}
+  .ai-box{display:flex;align-items:center;gap:10px;padding:14px 16px}
+  .ai-box input{flex:1;font-size:15px}
+  .ai-box input::placeholder{color:var(--ink-3)}
+  .mic{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+  .mic.rec{background:rgba(239,68,68,.18);color:#ff8a8a;box-shadow:0 0 0 0 rgba(239,68,68,.5);animation:micpulse 1.2s infinite}
+  @keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}70%{box-shadow:0 0 0 10px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+  .send{padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#4f8ef7,#6366f1);color:#fff;font-size:13px}
+  .slash-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+  .slash-chip{padding:6px 12px;border-radius:999px;font-size:12px;color:var(--ink-2);background:rgba(255,255,255,.04);border:1px solid var(--line-2)}
+  .slash-chip:hover{color:var(--ink);border-color:rgba(79,142,247,.5)}
+
+  .convo{max-width:760px;margin:14px auto 0;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .q{font-size:13px;color:var(--ink-2);display:flex;align-items:flex-start;gap:8px}
+  .q .spark{color:#9bbcf7}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips button{padding:5px 10px;border-radius:8px;font-size:11.5px;border:1px solid var(--line-2);background:rgba(255,255,255,.04);color:var(--ink-2)}
+  .chips button:hover{color:#fff;border-color:rgba(79,142,247,.5)}
+  .freeform{display:flex;gap:8px}
+  .freeform input{flex:1;padding:6px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:12px}
+  .actions{display:flex;gap:8px;align-items:center;padding-top:4px}
+  .btn-ghost{padding:7px 12px;border-radius:9px;border:1px solid var(--line-2);font-size:12px;color:var(--ink-2)}
+  .btn-ghost:hover{color:#fff}
+  .btn-x{color:var(--ink-3)}.btn-x:hover{color:#fff}
+
+  .columns{max-width:1240px;margin:36px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .col h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .pri-dot.h{background:#ef4444}.pri-dot.m{background:#f59e0b}.pri-dot.l{background:#22c55e}
+  .pri-dot{width:6px;height:6px;border-radius:50%}
+  .stack{display:flex;flex-direction:column;gap:10px}
+
+  .card{padding:12px 14px;position:relative;transition:border-color .15s ease}
+  .card:hover{border-color:rgba(79,142,247,.35)}
+  .card .row1{display:flex;align-items:flex-start;gap:10px}
+  .check{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--ink-4);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .check.done{background:linear-gradient(135deg,#4f8ef7,#6366f1);border-color:transparent}
+  .check.done svg{color:#fff}
+  .card .title{font-size:14px;flex:1;color:var(--ink)}
+  .card.done .title{text-decoration:line-through;color:var(--ink-3)}
+  .star{position:absolute;top:8px;right:8px;opacity:0;transition:opacity .15s ease;color:var(--ink-3)}
+  .card:hover .star,.star.on{opacity:1}
+  .star.on{color:#f59e0b}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 28px;font-size:11px;color:var(--ink-3)}
+  .meta .mc{display:inline-flex;gap:4px;align-items:center;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+  .meta .mc.cal{background:rgba(79,142,247,.12);color:#a8c3f0;border-color:rgba(79,142,247,.25)}
+  .meta .mc.gt{background:rgba(34,197,94,.12);color:#9fe8b2;border-color:rgba(34,197,94,.25)}
+  .meta .time{cursor:pointer}
+  .meta .time:hover{color:#cfe0ff}
+  .card .tools{margin-left:28px;margin-top:8px;display:flex;gap:8px}
+  .toggle{font-size:11px;color:#9bbcf7;cursor:pointer}
+  .roadmap{margin:8px 0 0 28px;display:flex;flex-direction:column;gap:5px}
+  .rstep{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+  .rstep .rcheck{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--ink-4);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .rstep .rcheck.done{background:#4f8ef7;border-color:transparent}
+  .rstep .timing{font-size:10px;color:var(--ink-3);margin-left:auto}
+  .insights{margin:10px 0 0 28px;padding:10px;border-radius:10px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.18);font-size:12px;color:var(--ink-2)}
+  .insights h5{margin:0 0 4px;font-size:11px;color:#9bbcf7;text-transform:uppercase;letter-spacing:.1em}
+  .insights ul{margin:6px 0;padding-left:18px}
+  .insights .ai{margin-top:8px;padding-top:8px;border-top:1px solid rgba(79,142,247,.18);color:var(--ink-2);font-size:12px}
+
+  .empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink-3);font-size:14px}
+
+  .previous{max-width:1240px;margin:42px auto 0}
+  .previous h2{font-size:12px;color:var(--ink-3);letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px}
+  .pgroup{margin-bottom:14px}
+  .pgroup h4{font-size:11px;color:var(--ink-3);margin:0 0 6px}
+
+  .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;padding:12px 16px;max-width:560px;font-size:13px}
+  .toast .row{display:flex;gap:10px;align-items:center}
+  .toast .actions{display:flex;gap:6px;margin-top:8px}
+
+  .timepicker{position:absolute;z-index:30;margin-top:6px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:220px}
+  .timepicker label{font-size:10px;color:var(--ink-3)}
+  .timepicker input{padding:6px 8px;border:1px solid var(--line-2);border-radius:8px;font-size:12px;color:#fff;background:rgba(0,0,0,.3);color-scheme:dark}
+  .timepicker .actions{display:flex;gap:6px;justify-content:flex-end}
+
+  /* login */
+  .login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100}
+  .login .card{max-width:380px;padding:32px;text-align:center}
+  .login h2{margin:0 0 8px;font-size:22px}
+  .login p{color:var(--ink-3);font-size:13px;margin:0 0 20px}
+  .gbtn{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:10px;background:#fff;color:#1a1a1a;font-weight:500;font-size:13px}
+
+  /* calendar tab */
+  .cal-grid{max-width:920px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-grid .dh{font-size:10px;color:var(--ink-3);text-align:center;padding:6px;text-transform:uppercase;letter-spacing:.1em}
+  .cal-cell{aspect-ratio:1;padding:6px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:12px;color:var(--ink-2);cursor:pointer;position:relative;display:flex;flex-direction:column}
+  .cal-cell:hover{border-color:rgba(79,142,247,.4)}
+  .cal-cell.today{background:rgba(99,102,241,.3);border-color:#6366f1;color:#fff}
+  .cal-cell.sel{background:rgba(79,142,247,.2);border-color:#4f8ef7}
+  .cal-cell .ds{display:flex;gap:2px;margin-top:auto}
+  .cal-cell .ds span{width:4px;height:4px;border-radius:50%}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;max-width:920px;margin:0 auto 14px}
+  .cal-nav h3{margin:0;font-size:16px}
+  .day-list{max-width:920px;margin:18px auto 0;display:flex;flex-direction:column;gap:8px}
+
+  .three-dots{display:inline-flex;gap:4px}
+  .three-dots span{width:6px;height:6px;border-radius:50%;background:#4f8ef7;animation:bd 1s infinite ease-in-out}
+  .three-dots span:nth-child(2){animation-delay:.15s}.three-dots span:nth-child(3){animation-delay:.3s}
+  @keyframes bd{0%,80%,100%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1.15)}}
+
+  .slash-panel{max-width:760px;margin:14px auto 0;padding:16px;position:relative}
+  .slash-panel .close{position:absolute;top:10px;right:10px;color:var(--ink-3)}
+  .slash-panel h4{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}
+  .slash-item{display:flex;gap:10px;padding:8px 0;font-size:13px;color:var(--ink-2);border-bottom:1px dashed var(--line)}
+  .slash-item:last-child{border-bottom:none}
+  .slash-item .num{width:22px;height:22px;border-radius:6px;background:rgba(79,142,247,.18);color:#9bbcf7;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+  .slash-item.warn{color:#fcd34d}
+  .slash-item.tip{color:#86efac}
+  .slash-item .te{margin-left:auto;font-size:10px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login glass-bg" id="loginScreen" style="display:none">
+  <div class="glass card">
+    <div style="font-size:32px;margin-bottom:6px">⚡</div>
+    <h2>Pulse Tasks 2.0</h2>
+    <p>Your AI chief-of-staff. Sign in to begin.</p>
+    <button class="gbtn" id="signInBtn">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3c-2 1.4-4.6 2.3-7.3 2.3-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.6l6.3 5.3C41.4 35.4 44 30.1 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Continue with Google
+    </button>
+    <p style="margin-top:18px;font-size:11px">Set your <code>GEMINI_API_KEY</code> and <code>firebaseConfig</code> in the source before publishing.</p>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">⚡</div>
+    <div class="nav">
+      <button class="active" data-tab="home"><span class="icon">🏠</span><span class="label">Home</span></button>
+      <button data-tab="starred"><span class="icon">⭐</span><span class="label">Starred</span></button>
+      <button data-tab="calendar"><span class="icon">📅</span><span class="label">Calendar</span></button>
+      <button data-tab="done"><span class="icon">✓</span><span class="label">Completed</span></button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="brand">Pulse Tasks <span style="color:var(--ink-3);font-weight:400">2.0</span></div>
+      <div class="topright">
+        <span class="chip" id="syncChip"><span class="dot" style="background:#22c55e"></span>Synced</span>
+        <span class="chip"><span class="dot pulse-dot" style="background:#4f8ef7"></span>Live Gemini active</span>
+        <button class="chip" id="signOutBtn" style="cursor:pointer">Sign out</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <!-- views injected by JS -->
+    </div>
+  </main>
+</div>
+
+<div id="toastHost"></div>
+
+<!-- Firebase modular SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// =================== FILL IN ===================
+const GEMINI_API_KEY = "your-gemini-api-key-here";
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+// ==============================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+provider.addScope("https://www.googleapis.com/auth/calendar");
+provider.addScope("https://www.googleapis.com/auth/calendar.events");
+provider.addScope("https://www.googleapis.com/auth/tasks");
+
+// ---------- State ----------
+const state = {
+  user: null,
+  googleToken: null,
+  tasks: [],            // pulse tasks (firestore)
+  calendarEvents: [],   // google calendar
+  googleTasks: [],      // google tasks
+  tab: "home",
+  convo: null,          // {phase, history, response, raw}
+  slashPanel: null,
+  conversationHistory: [],
+  unsubTasks: null,
+  selectedDay: new Date(),
+  calMonth: new Date(),
+  openTimePickerId: null,
+  openInsightsId: null,
+  openRoadmapId: null,
+};
+
+// ---------- Util ----------
+const $ = (s, r=document) => r.querySelector(s);
+const h = (tag, props={}, ...kids) => {
+  const el = document.createElement(tag);
+  for (const [k,v] of Object.entries(props||{})) {
+    if (k === "class") el.className = v;
+    else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === "html") el.innerHTML = v;
+    else if (v !== false && v != null) el.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) {
+    if (k == null || k === false) continue;
+    el.append(k.nodeType ? k : document.createTextNode(k));
+  }
+  return el;
+};
+const sameDay = (a,b) => a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const fmtTime = iso => { if(!iso) return ""; const d=new Date(iso); return d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); };
+const fmtDateTime = iso => { if(!iso) return ""; const d=new Date(iso); const t=new Date(); const tm=new Date(t); tm.setDate(t.getDate()+1);
+  let label = d.toLocaleDateString([], {month:"short", day:"numeric"});
+  if (sameDay(d,t)) label = "Today";
+  else if (sameDay(d,tm)) label = "Tomorrow";
+  return `${label} ${d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
+};
+
+// ---------- Toasts ----------
+function toast(msg, actions=[]) {
+  const host = $("#toastHost");
+  const t = h("div", {class:"toast glass"},
+    h("div", {class:"row"}, h("span",{class:"dot pulse-dot",style:{background:"#f59e0b"}}), h("span", {}, msg)),
+    actions.length ? h("div",{class:"actions"}, ...actions.map(a => h("button",{class:"btn-ghost", onclick:()=>{a.onClick();t.remove();}}, a.label))) : null
+  );
+  host.append(t);
+  setTimeout(()=>t.remove(), 8000);
+}
+function setSync(status) {
+  const chip = $("#syncChip"); if (!chip) return;
+  chip.innerHTML = "";
+  if (status === "syncing") chip.append(h("span",{class:"dot pulse-dot",style:{background:"#4f8ef7"}}),"Syncing");
+  else if (status === "err") chip.append(h("span",{class:"dot",style:{background:"#ef4444"}}),"Sync failed");
+  else chip.append(h("span",{class:"dot",style:{background:"#22c55e"}}),"Synced");
+}
+
+// ---------- Auth ----------
+$("#signInBtn").addEventListener("click", async () => {
+  try {
+    const res = await signInWithPopup(auth, provider);
+    const cred = GoogleAuthProvider.credentialFromResult(res);
+    state.googleToken = cred?.accessToken || null;
+    if (state.googleToken) localStorage.setItem("pulse_g_token", state.googleToken);
+  } catch (e) {
+    console.warn("popup failed, redirecting", e);
+    signInWithRedirect(auth, provider);
+  }
+});
+$("#signOutBtn").addEventListener("click", () => { localStorage.removeItem("pulse_g_token"); signOut(auth); });
+
+getRedirectResult(auth).then(res => {
+  if (res) {
+    const cred = GoogleAuthProvider.credentialFromResult(res);
+    if (cred?.accessToken) { state.googleToken = cred.accessToken; localStorage.setItem("pulse_g_token", cred.accessToken); }
+  }
+}).catch(()=>{});
+
+onAuthStateChanged(auth, user => {
+  state.user = user;
+  if (!user) {
+    $("#loginScreen").style.display = "flex";
+    $("#app").style.display = "none";
+    if (state.unsubTasks) { state.unsubTasks(); state.unsubTasks = null; }
+    return;
+  }
+  $("#loginScreen").style.display = "none";
+  $("#app").style.display = "grid";
+  state.googleToken = state.googleToken || localStorage.getItem("pulse_g_token");
+  subscribeTasks();
+  loadGoogleData();
+  render();
+});
+
+// ---------- Firestore ----------
+function subscribeTasks() {
+  if (!state.user) return;
+  const q = query(collection(db, "users", state.user.uid, "tasks"), orderBy("createdAt", "desc"));
+  state.unsubTasks = onSnapshot(q, snap => {
+    state.tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  });
+}
+async function createTaskFromAI(ai) {
+  if (!state.user) return;
+  setSync("syncing");
+  const t = {
+    title: ai.title || "Untitled",
+    taskType: ai.taskType || "other",
+    complexity: ai.complexity || "simple",
+    priority: ai.priority || "low",
+    priorityScore: ai.priorityScore || 0,
+    priorityReason: ai.priorityReason || "",
+    scheduledTime: ai.extractedEntities?.time || null,
+    timeDisplay: ai.extractedEntities?.timeDisplay || null,
+    person: ai.extractedEntities?.person || null,
+    location: ai.extractedEntities?.location || null,
+    topic: ai.extractedEntities?.topic || null,
+    roadmapSteps: (ai.roadmapSteps || []).map(s => ({...s, done: !!s.done})),
+    productivityRecommendation: ai.productivityRecommendation || null,
+    status: "active",
+    isStarred: false,
+    source: "pulse",
+    calendarEventId: null,
+    googleTaskId: null,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    const ref = await addDoc(collection(db, "users", state.user.uid, "tasks"), t);
+    setSync("ok");
+    if (t.scheduledTime) checkConflicts({...t, id: ref.id});
+  } catch (e) { console.error(e); setSync("err"); toast("Could not save — retry?", [{label:"Retry", onClick:()=>createTaskFromAI(ai)}]); }
+}
+async function updateTask(id, patch) {
+  if (!state.user) return;
+  setSync("syncing");
+  try { await updateDoc(doc(db, "users", state.user.uid, "tasks", id), patch); setSync("ok"); }
+  catch (e) { console.error(e); setSync("err"); }
+}
+async function removeTask(id) {
+  if (!state.user) return;
+  await deleteDoc(doc(db, "users", state.user.uid, "tasks", id));
+}
+
+// ---------- Conflict detection ----------
+function checkConflicts(newTask) {
+  if (!newTask.scheduledTime) return;
+  const nt = new Date(newTask.scheduledTime).getTime();
+  const overlap = state.tasks.find(t =>
+    t.id !== newTask.id && t.status === "active" && t.scheduledTime &&
+    Math.abs(new Date(t.scheduledTime).getTime() - nt) <= 30*60*1000
+  );
+  if (overlap) {
+    toast(`Conflict: "${newTask.title}" overlaps "${overlap.title}"`, [
+      {label:"Reschedule old", onClick:()=>updateTask(overlap.id,{scheduledTime:null,timeDisplay:null})},
+      {label:"Keep both", onClick:()=>{}},
+      {label:"Decide later", onClick:()=>{}},
+    ]);
+  }
+}
+
+// ---------- Google Calendar + Tasks ----------
+async function gapi(url, opts={}) {
+  if (!state.googleToken) throw new Error("no_token");
+  const res = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${state.googleToken}`, "Content-Type":"application/json", ...(opts.headers||{}) }});
+  if (res.status === 401) { toast("Google session expired — sign out and back in"); throw new Error("401"); }
+  if (res.status === 403) { toast("Calendar/Tasks permission needed — reconnect"); throw new Error("403"); }
+  if (!res.ok) throw new Error(`google_${res.status}`);
+  return res.status === 204 ? {} : res.json();
+}
+async function loadGoogleData() {
+  if (!state.googleToken) return;
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(23,59,59,999);
+    const ev = await gapi(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=${start.toISOString()}&timeMax=${end.toISOString()}`);
+    state.calendarEvents = (ev.items||[]).map(e => ({
+      id: e.id, title: e.summary || "(no title)",
+      scheduledTime: e.start?.dateTime || e.start?.date || null,
+      source: "calendar", priority: "medium", status: "active",
+    }));
+    const lists = await gapi("https://tasks.googleapis.com/tasks/v1/users/@me/lists");
+    if (lists.items?.length) {
+      const listId = lists.items[0].id;
+      const ts = await gapi(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks`);
+      state.googleTasks = (ts.items||[]).filter(t => t.status !== "completed").map(t => ({
+        id: t.id, googleListId: listId, title: t.title || "(untitled)",
+        scheduledTime: t.due || null, source: "gtasks", priority: "low", status: "active",
+      }));
+    }
+    render();
+  } catch (e) { console.warn(e); }
+}
+async function addToCalendar(task) {
+  if (!state.googleToken || !task.scheduledTime) return null;
+  const start = new Date(task.scheduledTime);
+  const end = new Date(start.getTime() + 30*60*1000);
+  try {
+    const res = await gapi("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+      method:"POST",
+      body: JSON.stringify({ summary: task.title, start:{dateTime:start.toISOString()}, end:{dateTime:end.toISOString()} })
+    });
+    return res.id;
+  } catch { return null; }
+}
+async function addToGoogleTasks(task) {
+  if (!state.googleToken) return null;
+  try {
+    const lists = await gapi("https://tasks.googleapis.com/tasks/v1/users/@me/lists");
+    const listId = lists.items?.[0]?.id; if (!listId) return null;
+    const res = await gapi(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks`, {
+      method:"POST",
+      body: JSON.stringify({ title: task.title, due: task.scheduledTime || undefined })
+    });
+    return { googleTaskId: res.id, googleTaskListId: listId };
+  } catch { return null; }
+}
+
+// ---------- Gemini ----------
+const SYSTEM_PROMPT_BASE = `You are the AI brain of Pulse Tasks 2.0, a premium personal productivity assistant and AI chief-of-staff. You are not a simple reminder app. You think ahead, ask smart questions, and help users prepare for their day.
+
+INTENT DETECTION — classify every input as one of:
+CREATE: user is adding a new task
+UPDATE: user is modifying an existing task
+QUERY: user is asking a question or using a slash command
+GIBBERISH: random characters, single letters, test inputs, repeated characters, hi, hello, ok, test
+
+INPUT QUALITY: valid, possible_typo (provide correctedInput), gibberish
+
+PRIORITY SCORING:
+CATEGORY POINTS: professional/work/meeting/client/deadline/presentation=40, financial/payment/bill/invoice=35, health/medical/doctor=30, family obligation/pick up kids/school=25, social/lunch/dinner/coffee/catch-up=15, errand/misc=10
+TIME URGENCY: within 2 hours=50 and always HIGH, today=25, tomorrow=15, this week=5, none=0
+CONSEQUENCE: another person depends on you=20, financial consequence if missed=20, affects professional reputation=15
+TOTAL: 60+ high, 30-59 medium, <30 low
+OVERRIDES: urgent/asap/critical/emergency = always high. payment due today = always high.
+
+COMPLEXITY: simple (single action, ≤1 prep), medium (involves another person/social), complex (professional event with stakes, prep required).
+
+CONVERSATION: Ask ONE clarifying question at a time with chip options. Meeting: when, time, who, what, prep. Payment: when due only. Errand: when only. Social: when, who. Interview: when, time, company/role, prep. Vague: what they need to handle (no chips). Max questions: simple=1, medium=2, complex=4. If hurried and critical fields filled, jump to CONFIRMING. Hurried = input <10 words or contains quick/fast/asap/just/remind me to.
+
+ROADMAP STEPS: complex tasks only, max 5, each {step, timing, icon}.
+
+PRODUCTIVITY RECOMMENDATION: complex tasks only. summary (2-3 sentences personalized), tips (3 specific actionable), aiInsight (use your training knowledge about the topic — e.g. if meeting is about Agentic AI explain it and talking points; if a specific company share context; if technical explain clearly).
+
+NATURAL LANGUAGE UPDATE: fuzzy match updateTarget. Patterns: change X to Y, reschedule X, mark X done, star X, delete/remove X. Return updateTarget=best matching existing title, updateFields={...}.
+
+SLASH COMMANDS (when QUERY matches): break_it_down (numbered step plan with time estimates for most important task), rescue_me (analyze all tasks, tell exactly what to do right now and order with reasoning), plan_my_day (realistic time-blocked schedule using actual titles), habit_check (review for patterns + specific encouragement + one actionable suggestion).
+
+OUTPUT — return ONLY valid JSON, no markdown:
+{
+ "intentType":"CREATE|UPDATE|QUERY|GIBBERISH",
+ "inputQuality":"valid|possible_typo|gibberish",
+ "correctedInput":null,
+ "updateTarget":null,
+ "updateFields":{},
+ "state":"CLARIFYING|CONFIRMING|CREATING",
+ "taskType":"meeting|payment|errand|social|interview|event|health|family|other",
+ "complexity":"simple|medium|complex",
+ "title":"...",
+ "userPace":"hurried|casual",
+ "extractedEntities":{"time":null,"timeDisplay":null,"person":null,"location":null,"topic":null},
+ "clarifyingQuestion":{"field":"when|who|what|where|prep","question":"...","chips":["...","Skip"]},
+ "priorityScore":0,
+ "priority":"high|medium|low",
+ "priorityReason":"...",
+ "roadmapSteps":[{"step":"...","timing":"...","icon":"📅","done":false}],
+ "productivityRecommendation":{"summary":"...","tips":["...","...","..."],"aiInsight":"..."},
+ "confirmationChips":["📅 ...","👤 ...","💼 ...","🔴 High"],
+ "slashResponse":null
+}
+For slash set slashResponse: {"type":"BREAKDOWN|RESCUE|PLAN|HABIT_CHECK","title":"...","items":[{"type":"overview|step|warning|tip","text":"...","number":1,"timeEstimate":"15 min"}]}`;
+
+function buildSystemPrompt() {
+  const now = new Date().toString();
+  const todays = state.tasks.filter(t => t.status==="active" && t.scheduledTime && sameDay(new Date(t.scheduledTime), new Date()));
+  const list = todays.length ? todays.map(t => `- ${t.title} [${t.priority}] ${fmtTime(t.scheduledTime)}`).join("\n") : "(none)";
+  return `${SYSTEM_PROMPT_BASE}\n\nCURRENT DATE AND TIME: ${now}\nUSER EXISTING TASKS TODAY:\n${list}`;
+}
+
+async function callGemini(history) {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.startsWith("your-")) throw new Error("Add your GEMINI_API_KEY at the top of the script.");
+  const SYSTEM_PROMPT = buildSystemPrompt();
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY,
+    { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        contents: history,
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048, responseMimeType: "application/json" }
+      })
+    });
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  return JSON.parse(clean);
+}
+
+// ---------- Conversation engine ----------
+async function submitAI(text) {
+  if (!text?.trim()) return;
+  state.conversationHistory = [{ role: "user", parts: [{ text: text.trim() }] }];
+  state.convo = { phase: "thinking", history: state.conversationHistory, response: null, raw: text };
+  state.slashPanel = null;
+  render();
+  await runTurn();
+}
+async function answerAI(text) {
+  if (!text?.trim()) return;
+  state.conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(state.convo.response||{}) }] });
+  state.conversationHistory.push({ role: "user", parts: [{ text: text.trim() }] });
+  state.convo.phase = "thinking";
+  render();
+  await runTurn();
+}
+async function runTurn() {
+  try {
+    const res = await callGemini(state.conversationHistory);
+    if (res.intentType === "GIBBERISH" || res.inputQuality === "gibberish") {
+      state.convo = null; toast("Hmm, that didn't look like a task. Try again."); render(); return;
+    }
+    if (res.slashResponse) {
+      state.slashPanel = res.slashResponse;
+      state.convo = null; render(); return;
+    }
+    if (res.intentType === "UPDATE" && res.updateTarget) {
+      state.convo = { phase: "update_confirm", response: res, history: state.conversationHistory, raw: "" };
+      render(); return;
+    }
+    if (res.state === "CREATING") {
+      await createTaskFromAI(res);
+      state.convo = null; state.conversationHistory = []; render(); return;
+    }
+    state.convo = {
+      phase: res.state === "CLARIFYING" ? "clarifying" : "confirming",
+      response: res, history: state.conversationHistory, raw: ""
+    };
+    render();
+  } catch (e) {
+    console.error(e);
+    state.convo = { phase: "error", error: e.message };
+    render();
+  }
+}
+async function confirmAI() {
+  if (!state.convo?.response) return;
+  await createTaskFromAI(state.convo.response);
+  state.convo = null; state.conversationHistory = []; render();
+}
+async function confirmUpdate() {
+  const r = state.convo.response;
+  const target = state.tasks.find(t => t.title.toLowerCase().includes((r.updateTarget||"").toLowerCase()));
+  if (target) await updateTask(target.id, r.updateFields || {});
+  state.convo = null; state.conversationHistory = []; render();
+}
+function cancelAI() { state.convo = null; state.conversationHistory = []; render(); }
+
+// ---------- Voice ----------
+let recognition = null, recState = { active:false, finalText:"" };
+function toggleMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast("Voice unavailable — try Chrome"); return; }
+  if (recState.active) { recognition?.stop(); return; }
+  recognition = new SR();
+  recognition.continuous = false; recognition.interimResults = true; recognition.lang = "en-US";
+  recState = { active: true, finalText: "" };
+  recognition.onresult = (e) => {
+    let interim = "";
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      const tr = e.results[i][0].transcript;
+      if (e.results[i].isFinal) recState.finalText += tr;
+      else interim += tr;
+    }
+    const inp = $("#aiInput"); if (inp) inp.value = recState.finalText + interim;
+  };
+  recognition.onend = () => {
+    recState.active = false; render();
+    const final = recState.finalText.trim();
+    if (final) submitAI(final);
+  };
+  recognition.onerror = () => { recState.active = false; render(); };
+  recognition.start(); render();
+}
+
+// ---------- Rendering ----------
+function render() {
+  const c = $("#content"); if (!c) return;
+  c.innerHTML = "";
+  // sidebar active
+  document.querySelectorAll(".sidebar .nav button").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === state.tab);
+    b.onclick = () => { state.tab = b.dataset.tab; render(); };
+  });
+
+  if (state.tab === "calendar") return renderCalendarTab(c);
+  if (state.tab === "starred") return renderStarredTab(c);
+  if (state.tab === "done") return renderDoneTab(c);
+  renderHome(c);
+}
+
+function renderHome(c) {
+  c.append(
+    h("div",{class:"hero"},
+      h("h1",{}, greeting()),
+      h("p",{}, "What is on your mind today?")
+    ),
+    renderAIBox(),
+    renderConvo(),
+    renderSlashPanel(),
+    renderColumns(),
+    renderPrevious()
+  );
+}
+
+function greeting() {
+  const h_ = new Date().getHours();
+  const name = state.user?.displayName?.split(" ")[0] || "there";
+  if (h_ < 12) return `Good morning, ${name}`;
+  if (h_ < 18) return `Good afternoon, ${name}`;
+  return `Good evening, ${name}`;
+}
+
+const PLACEHOLDERS = [
+  "What is on your mind today?",
+  "I have a meeting with John at 5pm",
+  "Remind me to call the client",
+  "Break down my presentation prep"
+];
+let phIdx = 0;
+setInterval(() => {
+  phIdx = (phIdx+1) % PLACEHOLDERS.length;
+  const inp = $("#aiInput");
+  if (inp && !inp.value && document.activeElement !== inp) inp.placeholder = PLACEHOLDERS[phIdx];
+}, 3000);
+
+function renderAIBox() {
+  const inputEl = h("input",{id:"aiInput", placeholder: PLACEHOLDERS[phIdx], autocomplete:"off",
+    onkeydown:(e)=>{ if (e.key==="Enter"){ const v=e.target.value; e.target.value=""; submitAI(v);} }
+  });
+  return h("div",{class:"ai-wrap"},
+    h("div",{class:"ai-box glass"},
+      h("span",{style:{color:"#9bbcf7"}}, "✨"),
+      inputEl,
+      h("button",{class:"mic "+(recState.active?"rec":""), onclick:toggleMic, title:"Voice"},
+        h("span",{html: recState.active ? "●" : "🎙"})
+      ),
+      h("button",{class:"send", onclick:()=>{ const v=inputEl.value; inputEl.value=""; submitAI(v);} }, "Send")
+    ),
+    h("div",{class:"slash-row"},
+      ...[
+        ["/break", "Break it down"],
+        ["/rescue", "Rescue me"],
+        ["/plan", "Plan my day"],
+        ["/habit", "Habit check"],
+      ].map(([cmd,label]) => h("button",{class:"slash-chip", onclick:()=>submitAI(cmd)}, label))
+    )
+  );
+}
+
+function renderConvo() {
+  const cv = state.convo; if (!cv) return null;
+  if (cv.phase === "thinking") return h("div",{class:"convo glass"},
+    h("div",{class:"q"}, h("span",{class:"three-dots"}, h("span"),h("span"),h("span")), h("span",{style:{marginLeft:"8px",color:"var(--ink-3)"}},"Pulse is thinking…"))
+  );
+  if (cv.phase === "error") return h("div",{class:"convo glass"},
+    h("div",{class:"q"}, h("span",{class:"spark"},"⚠"), h("span",{}, cv.error || "AI unavailable — try again")),
+    h("div",{class:"actions"}, h("button",{class:"btn-ghost",onclick:cancelAI},"Dismiss"))
+  );
+  const r = cv.response || {};
+  if (cv.phase === "clarifying") {
+    const cq = r.clarifyingQuestion || {};
+    return h("div",{class:"convo glass"},
+      h("div",{class:"q"}, h("span",{class:"spark"},"✨"), h("span",{}, cq.question || "Tell me more")),
+      h("div",{class:"chips"}, ...(cq.chips||[]).map(ch => h("button",{onclick:()=>answerAI(ch)}, ch))),
+      h("form",{class:"freeform", onsubmit:(e)=>{e.preventDefault(); const v=e.target.q.value; e.target.q.value=""; if(v) answerAI(v);}},
+        h("input",{name:"q",placeholder:"Or type your own…"}),
+        h("button",{class:"send",type:"submit"},"Send")
+      ),
+      h("div",{class:"actions"}, h("button",{class:"btn-x",onclick:cancelAI},"Cancel"))
+    );
+  }
+  if (cv.phase === "update_confirm") {
+    return h("div",{class:"convo glass"},
+      h("div",{class:"q"}, h("span",{class:"spark"},"✏"), h("span",{}, `Update "${r.updateTarget}"?`)),
+      h("div",{class:"chips"}, ...Object.entries(r.updateFields||{}).map(([k,v]) => h("span",{class:"slash-chip"}, `${k}: ${v}`))),
+      h("div",{class:"actions"},
+        h("button",{class:"send",onclick:confirmUpdate},"Confirm"),
+        h("button",{class:"btn-ghost",onclick:cancelAI},"Cancel"))
+    );
+  }
+  // confirming
+  if (r.inputQuality === "possible_typo" && r.correctedInput) {
+    return h("div",{class:"convo glass"},
+      h("div",{class:"q"}, h("span",{class:"spark"},"✨"), h("span",{}, `Did you mean: "${r.correctedInput}"?`)),
+      h("div",{class:"chips"},
+        h("button",{onclick:()=>{ state.conversationHistory=[{role:"user",parts:[{text:r.correctedInput}]}]; state.convo={phase:"thinking",history:state.conversationHistory,response:null,raw:r.correctedInput}; render(); runTurn();}}, "Yes use this"),
+        h("button",{onclick:cancelAI},"No let me retype"))
+    );
+  }
+  return h("div",{class:"convo glass"},
+    h("div",{class:"q"}, h("span",{class:"spark"},"✨"), h("span",{}, `Got it. Does this look right?`)),
+    h("div",{class:"chips"}, ...(r.confirmationChips||[]).map(c => h("span",{class:"slash-chip"}, c))),
+    r.priorityReason ? h("div",{style:{fontSize:"11px",color:"var(--ink-3)"}}, r.priorityReason) : null,
+    (r.roadmapSteps||[]).length ? h("div",{class:"roadmap",style:{marginLeft:0}}, ...r.roadmapSteps.map(s =>
+      h("div",{class:"rstep"}, h("span",{}, s.icon||"•"), h("span",{style:{flex:1}}, s.step), s.timing?h("span",{class:"timing"},s.timing):null)
+    )) : null,
+    h("div",{class:"actions"},
+      h("button",{class:"send",onclick:confirmAI},"Create task"),
+      state.googleToken && r.extractedEntities?.time ? h("button",{class:"btn-ghost", onclick:async()=>{
+        const id = await addToCalendar({title:r.title, scheduledTime:r.extractedEntities.time});
+        if (id) toast("Added to Google Calendar");
+        await confirmAI();
+      }}, "📅 Add to Calendar") : null,
+      state.googleToken ? h("button",{class:"btn-ghost", onclick:async()=>{
+        const g = await addToGoogleTasks({title:r.title, scheduledTime:r.extractedEntities?.time});
+        if (g) toast("Added to Google Tasks");
+        await confirmAI();
+      }}, "✓ Add to Google Tasks") : null,
+      h("button",{class:"btn-ghost",onclick:()=>answerAI("Yes, ask me for more context to enrich this task.")},"Add more context"),
+      h("button",{class:"btn-x",onclick:cancelAI},"Cancel"))
+  );
+}
+
+function renderSlashPanel() {
+  const sp = state.slashPanel; if (!sp) return null;
+  return h("div",{class:"slash-panel glass"},
+    h("button",{class:"close",onclick:()=>{state.slashPanel=null;render();}}, "✕"),
+    h("h4",{}, h("span",{class:"spark",style:{color:"#9bbcf7"}},"✨"), sp.title || "Pulse"),
+    ...(sp.items||[]).map((it,i) =>
+      h("div",{class:"slash-item "+(it.type==="warning"?"warn":it.type==="tip"?"tip":"")},
+        it.type==="step" ? h("span",{class:"num"}, String(it.number ?? (i+1))) : h("span",{class:"num"}, it.type==="warning"?"⚠":it.type==="tip"?"💡":"•"),
+        h("span",{style:{flex:1}}, it.text),
+        it.timeEstimate ? h("span",{class:"te"}, it.timeEstimate) : null
+      )
+    )
+  );
+}
+
+function allTasksMerged() {
+  // merge pulse + google for column display
+  return [
+    ...state.tasks,
+    ...state.calendarEvents,
+    ...state.googleTasks
+  ];
+}
+
+function renderColumns() {
+  const active = allTasksMerged().filter(t => t.status === "active");
+  const groups = { high: [], medium: [], low: [] };
+  for (const t of active) {
+    const p = (t.priority || "low").toLowerCase();
+    (groups[p] || groups.low).push(t);
+  }
+  const allEmpty = !groups.high.length && !groups.medium.length && !groups.low.length;
+  if (allEmpty) {
+    return h("div",{class:"columns"}, h("div",{class:"empty"}, "Your day is clear. Add something above."));
+  }
+  const cols = [];
+  for (const [k,label,cls] of [["high","High priority","h"],["medium","Medium priority","m"],["low","Low priority","l"]]) {
+    if (!groups[k].length) continue;
+    cols.push(h("div",{class:"col"},
+      h("h3",{}, h("span",{class:"pri-dot "+cls}), label, h("span",{style:{marginLeft:"auto",color:"var(--ink-4)"}}, String(groups[k].length))),
+      h("div",{class:"stack"}, ...groups[k].map(renderCard))
+    ));
+  }
+  return h("div",{class:"columns",style:{gridTemplateColumns: `repeat(${cols.length},1fr)`}}, ...cols);
+}
+
+function renderCard(t) {
+  const card = h("div",{class:"card glass"+(t.status==="done"?" done":"")});
+  const isPulse = t.source !== "calendar" && t.source !== "gtasks";
+
+  card.append(
+    h("div",{class:"row1"},
+      h("div",{class:"check"+(t.status==="done"?" done":""),
+        onclick: () => {
+          if (!isPulse) return;
+          updateTask(t.id, { status: t.status==="done"?"active":"done", completedAt: t.status==="done"?null:new Date().toISOString() });
+        }
+      }, t.status==="done" ? h("span",{html:"<svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><polyline points='5 12 11 18 20 7'/></svg>"}) : null),
+      h("div",{class:"title"}, t.title),
+      isPulse ? h("button",{class:"star"+(t.isStarred?" on":""), onclick:()=>updateTask(t.id,{isStarred:!t.isStarred})},
+        h("span",{html: t.isStarred ? "★" : "☆"})) : null
+    )
+  );
+
+  const metaBits = [];
+  if (t.scheduledTime) metaBits.push(
+    h("span",{class:"mc time", onclick:(e)=>{ if(!isPulse) return; e.stopPropagation(); openTimePicker(card, t); }},
+      "🕒 ", fmtDateTime(t.scheduledTime))
+  );
+  if (t.person) metaBits.push(h("span",{class:"mc"}, "👤 ", t.person));
+  if (t.source==="calendar") metaBits.push(h("span",{class:"mc cal"},"📅 Google Calendar"));
+  if (t.source==="gtasks") metaBits.push(h("span",{class:"mc gt"},"✓ Google Tasks"));
+  if (metaBits.length) card.append(h("div",{class:"meta"}, ...metaBits));
+
+  if (isPulse && (t.roadmapSteps?.length || t.productivityRecommendation)) {
+    const tools = h("div",{class:"tools"});
+    if (t.roadmapSteps?.length) tools.append(h("button",{class:"toggle",onclick:()=>{state.openRoadmapId=state.openRoadmapId===t.id?null:t.id;render();}}, (state.openRoadmapId===t.id?"▾ ":"▸ ") + "Prep steps"));
+    if (t.productivityRecommendation) tools.append(h("button",{class:"toggle",onclick:()=>{state.openInsightsId=state.openInsightsId===t.id?null:t.id;render();}}, "💡 Insights"));
+    card.append(tools);
+  }
+
+  if (isPulse && state.openRoadmapId === t.id && t.roadmapSteps?.length) {
+    card.append(h("div",{class:"roadmap"}, ...t.roadmapSteps.map((s,i) =>
+      h("div",{class:"rstep"},
+        h("span",{class:"rcheck"+(s.done?" done":""), onclick:()=>{
+          const next=[...t.roadmapSteps]; next[i]={...s,done:!s.done};
+          updateTask(t.id,{roadmapSteps:next});
+        }}, s.done?h("span",{html:"<svg width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4'><polyline points='5 12 11 18 20 7'/></svg>"}):null),
+        h("span",{}, s.icon||"•"), h("span",{style:{flex:1}}, s.step),
+        s.timing?h("span",{class:"timing"},s.timing):null
+      )
+    )));
+  }
+  if (isPulse && state.openInsightsId === t.id && t.productivityRecommendation) {
+    const pr = t.productivityRecommendation;
+    card.append(h("div",{class:"insights"},
+      h("h5",{},"Recommendation"),
+      h("div",{},pr.summary),
+      pr.tips?.length ? h("ul",{}, ...pr.tips.map(tip => h("li",{}, tip))) : null,
+      pr.aiInsight ? h("div",{class:"ai"}, pr.aiInsight) : null
+    ));
+  }
+  return card;
+}
+
+function openTimePicker(anchor, t) {
+  document.querySelectorAll(".timepicker").forEach(x=>x.remove());
+  const d = t.scheduledTime ? new Date(t.scheduledTime) : new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const timeStr = d.toTimeString().slice(0,5);
+  const tp = h("div",{class:"timepicker glass"},
+    h("label",{},"Date"), h("input",{type:"date",value:dateStr,id:"tpd"}),
+    h("label",{},"Time"), h("input",{type:"time",value:timeStr,id:"tpt"}),
+    h("div",{class:"actions"},
+      h("button",{class:"btn-ghost",onclick:()=>{updateTask(t.id,{scheduledTime:null,timeDisplay:null}); tp.remove();}}, "Clear"),
+      h("button",{class:"send",onclick:()=>{
+        const dv=tp.querySelector("#tpd").value, tv=tp.querySelector("#tpt").value;
+        if (dv && tv){ const iso=new Date(`${dv}T${tv}`).toISOString(); updateTask(t.id,{scheduledTime:iso,timeDisplay:fmtDateTime(iso)});}
+        tp.remove();
+      }}, "Save"))
+  );
+  anchor.style.position="relative";
+  anchor.append(tp);
+  const close = (e)=>{ if (!tp.contains(e.target)) { tp.remove(); document.removeEventListener("click",close,true); document.removeEventListener("keydown",esc); } };
+  const esc = (e)=>{ if (e.key==="Escape") { tp.remove(); document.removeEventListener("click",close,true); document.removeEventListener("keydown",esc); } };
+  setTimeout(()=>document.addEventListener("click",close,true),0);
+  document.addEventListener("keydown",esc);
+}
+
+function renderPrevious() {
+  const done = state.tasks.filter(t => t.status === "done");
+  if (!done.length) return null;
+  const groups = {}; const today=new Date(); const y=new Date(today); y.setDate(y.getDate()-1);
+  for (const t of done) {
+    const d = t.completedAt ? new Date(t.completedAt) : new Date();
+    const label = sameDay(d,today)?"Today":sameDay(d,y)?"Yesterday":d.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
+    (groups[label] = groups[label] || []).push(t);
+  }
+  return h("div",{class:"previous"},
+    h("h2",{},"Previous tasks"),
+    ...Object.entries(groups).map(([k,v]) => h("div",{class:"pgroup"},
+      h("h4",{}, k),
+      h("div",{class:"stack"}, ...v.slice(0,8).map(renderCard))
+    ))
+  );
+}
+
+function renderStarredTab(c) {
+  const starred = state.tasks.filter(t => t.isStarred);
+  c.append(h("div",{class:"hero"}, h("h1",{},"⭐ Starred"), h("p",{},"Pinned tasks you want to keep close.")));
+  if (!starred.length) {
+    c.append(h("div",{class:"empty",style:{maxWidth:"600px",margin:"40px auto"}}, "Nothing starred yet. Hover a task and tap the star to save it here."));
+    return;
+  }
+  const today=new Date(); const tom=new Date(today); tom.setDate(today.getDate()+1); const wkEnd=new Date(today); wkEnd.setDate(today.getDate()+7);
+  const groups = { "Today":[], "Tomorrow":[], "This Week":[], "No Date":[] };
+  for (const t of starred) {
+    if (!t.scheduledTime) groups["No Date"].push(t);
+    else { const d = new Date(t.scheduledTime);
+      if (sameDay(d,today)) groups.Today.push(t);
+      else if (sameDay(d,tom)) groups.Tomorrow.push(t);
+      else if (d<=wkEnd) groups["This Week"].push(t);
+      else groups["No Date"].push(t); }
+  }
+  const wrap = h("div",{style:{maxWidth:"760px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"20px"}});
+  for (const [k,v] of Object.entries(groups)) {
+    if (!v.length) continue;
+    wrap.append(h("div",{}, h("h4",{style:{fontSize:"11px",letterSpacing:".16em",textTransform:"uppercase",color:"var(--ink-3)",margin:"0 0 10px"}}, k), h("div",{class:"stack"}, ...v.map(renderCard))));
+  }
+  c.append(wrap);
+}
+
+function renderDoneTab(c) {
+  const done = state.tasks.filter(t => t.status==="done");
+  c.append(h("div",{class:"hero"}, h("h1",{},"Completed"), h("p",{}, `${done.length} task${done.length===1?"":"s"} finished.`)));
+  if (!done.length) { c.append(h("div",{class:"empty"},"No completed tasks yet.")); return; }
+  c.append(h("div",{style:{maxWidth:"760px",margin:"0 auto"},class:"stack"}, ...done.map(renderCard)));
+}
+
+function renderCalendarTab(c) {
+  const month = state.calMonth;
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth()+1, 0).getDate();
+  const cells = [];
+  for (let i=0;i<startDay;i++) cells.push(h("div"));
+  for (let d=1; d<=daysInMonth; d++) {
+    const cellDate = new Date(month.getFullYear(), month.getMonth(), d);
+    const isToday = sameDay(cellDate, new Date());
+    const isSel = sameDay(cellDate, state.selectedDay);
+    const dots = [];
+    if (state.calendarEvents.some(e => e.scheduledTime && sameDay(new Date(e.scheduledTime), cellDate))) dots.push(h("span",{style:{background:"#4f8ef7"}}));
+    if (state.googleTasks.some(t => t.scheduledTime && sameDay(new Date(t.scheduledTime), cellDate))) dots.push(h("span",{style:{background:"#22c55e"}}));
+    if (state.tasks.some(t => t.scheduledTime && sameDay(new Date(t.scheduledTime), cellDate))) dots.push(h("span",{style:{background:"#a78bfa"}}));
+    cells.push(h("div",{class:"cal-cell"+(isToday?" today":"")+(isSel?" sel":""), onclick:()=>{state.selectedDay=cellDate;render();}},
+      h("div",{}, String(d)),
+      h("div",{class:"ds"}, ...dots)
+    ));
+  }
+  c.append(
+    h("div",{class:"cal-nav"},
+      h("button",{class:"btn-ghost",onclick:()=>{state.calMonth=new Date(month.getFullYear(),month.getMonth()-1,1);render();}},"‹"),
+      h("h3",{}, month.toLocaleDateString([], {month:"long", year:"numeric"})),
+      h("button",{class:"btn-ghost",onclick:()=>{state.calMonth=new Date(month.getFullYear(),month.getMonth()+1,1);render();}},"›")
+    ),
+    h("div",{class:"cal-grid"},
+      ...["S","M","T","W","T","F","S"].map(d => h("div",{class:"dh"},d)),
+      ...cells
+    )
+  );
+  // day list
+  const dayItems = allTasksMerged().filter(t => t.scheduledTime && sameDay(new Date(t.scheduledTime), state.selectedDay));
+  dayItems.sort((a,b)=>new Date(a.scheduledTime)-new Date(b.scheduledTime));
+  c.append(h("div",{class:"day-list"},
+    h("h4",{style:{margin:"0 0 4px",color:"var(--ink-3)",fontSize:"12px"}}, state.selectedDay.toDateString()),
+    ...(dayItems.length ? dayItems.map(renderCard) : [h("div",{class:"empty"},"Nothing scheduled.")])
+  ));
+}
+
+</script>
+</body>
+</html>
