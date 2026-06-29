@@ -183,6 +183,12 @@ export default function HomeView({
                 }}
               >
                 Tasks 2.0
+                <span
+                  className="ml-2 align-middle text-[12px] font-normal tracking-normal text-white/40"
+                  style={{ WebkitTextFillColor: 'rgba(255,255,255,0.4)' }}
+                >
+                  jitesh
+                </span>
               </h1>
               <p className="text-[14px] md:text-[15px] text-white/55">
                 Don't forget yours!
